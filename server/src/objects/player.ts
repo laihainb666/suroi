@@ -3570,6 +3570,7 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
     }
 
     processDebugPacket(data: DebugPacket): void {
+        if (!this.isDev) return;
         this.baseSpeed = data.speed;
 
         const oldZoomOverride = this._zoomOverride;
