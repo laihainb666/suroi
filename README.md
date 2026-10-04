@@ -70,3 +70,30 @@ bun start
 ```
 
 Production builds are served using [NGINX](https://nginx.org). Visit [the wiki](https://github.com/HasangerGames/suroi/wiki/Self%E2%80%90hosting) for details on how to self-host.
+
+
+---
+
+## Private Server Additions (laihainb666/suroi)
+
+This fork adds GM tools & multiplayer enhancements on top of upstream Suroi.
+
+### GM Tools (server plugins)
+Enable plugins in `server/config.json` (`plugins` array). The GM identity comes from `roles` entries marked `isDev: true` (e.g. `developr`, `hasanger`, `pap`).
+
+| Plugin | Description |
+|---|---|
+| `gmToolsPlugin` | All-in-one GM tool, triggered via emote wheel (GM only): Troll Face = toggle invincibility; Fire = full heal; Heart = random gun; Thumbs Up = airdrop at self; Question Mark = 12x speed; Pog = drop all weapons; Wave = teleport to map center; Skull = full tactical gear. Map ping = teleport to ping (GM only). |
+| `killRewardPlugin` | Multiplayer quality-of-life: killer's active weapon ammo refills instantly after a kill. |
+| `placeObjectPlugin` | (dev) Spawn column obstacles. |
+| `teleportPlugin` | (dev) Teleport any player on map ping. |
+| `speedTogglePlugin` | (dev) Toggle 12x speed on emote. |
+| `juggernautPlugin` | First player becomes a juggernaut; title transfers on death. |
+| `weaponSwapPlugin` | Kills replace the killer's weapon with a random one + refill ammo. |
+
+### Security fix
+`processDebugPacket` is now gated behind `isDev` — regular clients can no longer send the debug packet to enable god mode / no-clip / speed hacks. Only GM roles can use the in-game debug menu.
+
+### Multiplayer notes
+- Rooms: Bun cluster workers, one game per worker (`GameContainer` in `gameManager.ts`), `/play` route upgrades WebSocket with role / isDev metadata.
+- Suggested GM workflow: connect with an `isDev` role (`/play?role=developr&password=developr&...` per role parsing), open the debug menu (backtick key by default) for sliders, and use emotes / map pings for plugin commands.
