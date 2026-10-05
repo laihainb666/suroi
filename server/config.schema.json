@@ -36,7 +36,10 @@
                             "type": "string"
                         }
                     },
-                    "required": ["rotation", "cron"],
+                    "required": [
+                        "rotation",
+                        "cron"
+                    ],
                     "additionalProperties": false
                 }
             ]
@@ -68,7 +71,11 @@
                         "type": "number"
                     }
                 },
-                "required": ["minPlayers", "maxPlayers", "scale"],
+                "required": [
+                    "minPlayers",
+                    "maxPlayers",
+                    "scale"
+                ],
                 "additionalProperties": false
             }
         },
@@ -77,7 +84,11 @@
             "oneOf": [
                 {
                     "type": "string",
-                    "enum": ["solo", "duo", "squad"]
+                    "enum": [
+                        "solo",
+                        "duo",
+                        "squad"
+                    ]
                 },
                 {
                     "type": "object",
@@ -87,7 +98,11 @@
                             "type": "array",
                             "items": {
                                 "type": "string",
-                                "enum": ["solo", "duo", "squad"]
+                                "enum": [
+                                    "solo",
+                                    "duo",
+                                    "squad"
+                                ]
                             },
                             "minItems": 1
                         },
@@ -96,7 +111,10 @@
                             "type": "string"
                         }
                     },
-                    "required": ["rotation", "cron"],
+                    "required": [
+                        "rotation",
+                        "cron"
+                    ],
                     "additionalProperties": false
                 }
             ]
@@ -108,7 +126,11 @@
                 "mode": {
                     "description": "There are three spawn modes: \"default\", \"random\", and \"fixed\".\n\"default\" uses the spawn options specified in the map definition, falling back to \"random\" if no options are specified.\n\"random\" spawns players randomly, spreading them out as much as possible.\n\"fixed\" spawns players exactly at the specified position, or randomly within a circle with the specified radius. If no position is specified, it defaults to the center of the map.",
                     "type": "string",
-                    "enum": ["default", "random", "fixed"]
+                    "enum": [
+                        "default",
+                        "random",
+                        "fixed"
+                    ]
                 },
                 "position": {
                     "description": "The position to spawn players at.\nThe first, second, and third items in the array represent the X, Y, and Z coordinates respectively, with the Z coordinate being optional (defaulting to the ground layer).\nIf a \"radius\" is not specified, players are spawned at this exact position.\nIf a \"radius\" is specified, players are spawned randomly within a circle centered at this position.\nThis property is ignored unless the spawn mode is set to \"fixed\".",
@@ -125,7 +147,9 @@
                     "minimum": 0
                 }
             },
-            "required": ["mode"],
+            "required": [
+                "mode"
+            ],
             "additionalProperties": false
         },
         "gas": {
@@ -138,7 +162,10 @@
                 },
                 "forcePosition": {
                     "description": "Forces the gas to shrink to a specific position. If set to true, it will shrink to the center of the map.",
-                    "type": ["array", "boolean"],
+                    "type": [
+                        "array",
+                        "boolean"
+                    ],
                     "items": {
                         "type": "number"
                     },
@@ -193,7 +220,10 @@
                     "type": "string"
                 }
             },
-            "required": ["url", "apiKey"],
+            "required": [
+                "url",
+                "apiKey"
+            ],
             "additionalProperties": false
         },
         "ipHeader": {
@@ -219,7 +249,10 @@
                     "exclusiveMinimum": 0
                 }
             },
-            "required": ["count", "duration"],
+            "required": [
+                "count",
+                "duration"
+            ],
             "additionalProperties": false
         },
         "maxCustomTeams": {
@@ -248,7 +281,9 @@
                             "type": "boolean"
                         }
                     },
-                    "required": ["password"]
+                    "required": [
+                        "password"
+                    ]
                 }
             }
         },
@@ -267,8 +302,38 @@
         "overrideGunLootTable": {
             "description": "If present, every gun will be replaced with a random item from the given loot table.",
             "type": "string"
+        },
+        "allowPublicDebugMenu": {
+            "description": "If true (default), the in-game debug menu and console are available to ALL players, not only roles marked isDev. Set to false to restrict them to GM roles.",
+            "type": "boolean"
+        },
+        "gmToolsPublic": {
+            "description": "If true (default), GM tools (invulnerability, give guns, airdrop, teleport...) are available to ALL players via the emote wheel. Set to false to restrict to GM roles.",
+            "type": "boolean"
+        },
+        "multiplayerEnhancements": {
+            "description": "Toggles for the MultiplayerEnhancementsPlugin.",
+            "type": "object",
+            "properties": {
+                "firstBloodBonus": {
+                    "type": "boolean",
+                    "description": "Grant the first killer of the round 50% extra adrenaline."
+                },
+                "revengeTracking": {
+                    "type": "boolean",
+                    "description": "Log when a player gets 2+ kills on the same target."
+                }
+            }
         }
     },
-    "required": ["$schema", "hostname", "port", "map", "teamMode", "maxPlayersPerGame", "maxGames"],
+    "required": [
+        "$schema",
+        "hostname",
+        "port",
+        "map",
+        "teamMode",
+        "maxPlayersPerGame",
+        "maxGames"
+    ],
     "additionalProperties": false
 }
