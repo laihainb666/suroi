@@ -208,6 +208,29 @@ export interface ConfigSchema {
    */
   allowLobbyClearing?: boolean;
   /**
+   * If true (default), the in-game debug menu and console are available to ALL
+   * players, not only roles marked isDev. Set to false to restrict them to GM roles.
+   */
+  allowPublicDebugMenu?: boolean;
+  /**
+   * If true (default), GM tools (invulnerability, give guns, airdrop, teleport...)
+   * are available to ALL players via the emote wheel. Set to false to restrict to GM roles.
+   */
+  gmToolsPublic?: boolean;
+  /**
+   * Toggles for the MultiplayerEnhancementsPlugin.
+   */
+  multiplayerEnhancements?: {
+    /**
+     * Grant the first killer of the round 50% extra adrenaline.
+     */
+    firstBloodBonus?: boolean;
+    /**
+     * Log when a player gets 2+ kills on the same target.
+     */
+    revengeTracking?: boolean;
+  };
+  /**
    * If true, allows things like scopes and flares to work in buildings.
    */
   disableBuildingCheck?: boolean;
