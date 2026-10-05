@@ -299,7 +299,10 @@ export class Game implements GameData {
                     player.spectate(packet);
                     break;
                 case PacketType.Debug:
-                    if (process.env.NODE_ENV === "development") {
+                    // 调试包门禁：默认对所有玩家开放（allowPublicDebugMenu）。
+                    // 原上游仅在 NODE_ENV=development 下放行，这里改为读配置，
+                    // 这样生产部署也能开调试菜单；把配置设为 false 即可完全关闭。
+                    if (Config.allowPublicDebugMenu !== false || process.env.NODE_ENV === "development") {
                         player.processDebugPacket(packet);
                     }
                     break;
