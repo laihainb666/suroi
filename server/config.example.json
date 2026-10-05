@@ -1,27 +1,102 @@
 {
     "$schema": "config.schema.json",
-    "hostname": "127.0.0.1",
+    "hostname": "0.0.0.0",
     "port": 8000,
     "map": "normal",
+    "mapScaleRanges": [
+        {
+            "minPlayers": 0,
+            "maxPlayers": 19,
+            "mapScale": 0.75
+        },
+        {
+            "minPlayers": 20,
+            "maxPlayers": 49,
+            "mapScale": 1
+        },
+        {
+            "minPlayers": 50,
+            "maxPlayers": 80,
+            "mapScale": 1.25
+        }
+    ],
     "teamMode": "solo",
-    "spawn": { "mode": "default" },
+    "spawn": {
+        "mode": "default"
+    },
     "maxPlayersPerGame": 80,
     "maxGames": 5,
-    "plugins": ["gmToolsPlugin", "killRewardPlugin"],
+    "minTeamsToStart": 1,
+    "plugins": [
+        "juggernautPlugin",
+        "killRewardPlugin",
+        "weaponSwapPlugin",
+        "gmToolsPlugin",
+        "multiplayerEnhancementsPlugin"
+    ],
+    "gmToolsPublic": true,
+    "allowPublicDebugMenu": true,
+    "maxSimultaneousConnections": 16,
+    "maxJoinAttempts": {
+        "count": 12,
+        "duration": 10000
+    },
+    "maxCustomTeams": 4,
+    "usernameFilters": [
+        "fuck",
+        "shit",
+        "nig",
+        "retard",
+        "cunt"
+    ],
     "roles": {
-        "developr": { "password": "developr", "isDev": true },
-        "dev_managr": { "password": "dev_managr" },
-        "designr": { "password": "designr" },
-        "vip_designr": { "password": "vip_designr" },
-        "sound_designr": { "password": "sound_designr" },
-        "moderatr": { "password": "moderatr" },
-        "administratr": { "password": "administratr" },
-        "lead_content_creatr": { "password": "lead_content_creatr", "isDev": true },
-        "content_creatr": { "password": "content_creatr" },
-        "donatr": { "password": "donatr" },
-        "marketr": { "password": "marketr", "isDev": true },
-
-        "hasanger": { "password": "hasanger", "isDev": true },
-        "pap": { "password": "pap", "isDev": true }
+        "developr": {
+            "password": "CHANGE_ME_developr",
+            "isDev": true
+        },
+        "dev_managr": {
+            "password": "CHANGE_ME_dev_managr"
+        },
+        "designr": {
+            "password": "CHANGE_ME_designr"
+        },
+        "vip_designr": {
+            "password": "CHANGE_ME_vip_designr"
+        },
+        "sound_designr": {
+            "password": "CHANGE_ME_sound_designr"
+        },
+        "moderatr": {
+            "password": "CHANGE_ME_moderatr"
+        },
+        "administratr": {
+            "password": "CHANGE_ME_administratr"
+        },
+        "lead_content_creatr": {
+            "password": "CHANGE_ME_lead_content_creatr",
+            "isDev": true
+        },
+        "content_creatr": {
+            "password": "CHANGE_ME_content_creatr"
+        },
+        "donatr": {
+            "password": "CHANGE_ME_donatr"
+        },
+        "marketr": {
+            "password": "CHANGE_ME_marketr",
+            "isDev": true
+        },
+        "hasanger": {
+            "password": "CHANGE_ME_hasanger",
+            "isDev": true
+        },
+        "pap": {
+            "password": "CHANGE_ME_pap",
+            "isDev": true
+        }
+    },
+    "multiplayerEnhancements": {
+        "firstBloodBonus": true,
+        "revengeTracking": true
     }
 }
