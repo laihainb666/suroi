@@ -459,7 +459,12 @@ export const defaultBinds = Object.freeze({
     "+emote_wheel": ["Mouse2"],
     "+map_ping_wheel": ["C"],
     "fullscreen": [],
-    "toggle_console": [],
+    // 增强：控制台默认绑定反引号（`）。上游默认为空数组，
+    // 导致控制台虽然初始化了但没有任何按键可以打开。
+    "toggle_console": ["Backquote"],
+    // 增强：调试菜单的开关命令。上游完全没有这个绑定，
+    // debugMenu 只被 new 出来却没有任何地方调用 open()，等于开不了。
+    "toggle_debug_menu": ["F9"],
     "+map_ping": [],
     "toggle_slot_lock": ["L"],
     "screen_record": [],
