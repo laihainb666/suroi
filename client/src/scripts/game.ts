@@ -677,6 +677,10 @@ export const Game = new (class Game {
         if (DEBUG_CLIENT) {
             this.debugMenu = new (await import("./utils/debugMenu")).DebugMenu();
             this.debugMenu.init();
+            // 增强：上游在 console/commands.ts 末尾已经注册了
+            //   alias toggle_debug_menu "toggle cv_debug_menu_open"
+            // 但 defaultBinds 里没有给这个动作绑任何键，
+            // 导致调试菜单无法打开。键位已在 variables.ts 中补为 F9。
         }
         await setUpUI();
         await fetchServerData();
