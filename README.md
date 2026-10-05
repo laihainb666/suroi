@@ -116,8 +116,31 @@ Production builds are served using [NGINX](https://nginx.org). Visit [the wiki](
 
 改成 `false` 即恢复为「仅 GM 可用」，无需改代码。
 
-**玩家用法**：反引号键 `` ` `` 打开调试菜单或控制台。
-控制台支持 `db_invulnerable true`、`noclip`、`map normal`、`spawn mg5` 等命令。
+### 怎么开启（键位）
+
+| 系统 | 按键 | 说明 |
+|---|---|---|
+| **控制台** | `` ` ``（反引号） | 上游默认未绑键，本分支补上 |
+| **调试菜单** | `F9` | 上游只注册了命令没绑键，本分支补上 |
+
+> 这两个键位在上游是**空的**（`toggle_console` 和 `toggle_debug_menu`
+> 都是 `[]`），所以虽然系统初始化了却打不开。本分支已绑定。
+> 可在控制台里用 `bind toggle_debug_menu F9` 改成任意按键，
+> 或在设置 → 按键绑定里改。
+
+**控制台常用命令**：
+
+```
+db_invulnerable true      # 无敌
+db_no_clip true           # 穿墙
+db_speed_override 0.05    # 移速覆盖
+map normal                # 切地图
+spawn mg5                 # 刷枪（调试菜单里更方便）
+cv_renderer_ resolution   # 渲染设置
+```
+
+调试菜单（F9）里是图形化控件：速度滑块、缩放覆盖、无敌开关、层切换、
+刷枪下拉、刷假人（含护甲选择），比敲命令直观。
 
 ### 插件清单
 
