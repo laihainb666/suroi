@@ -42,10 +42,27 @@
 改成 `false` 即恢复为「仅 GM 可用」，无需改代码。
 
 **玩家侧使用方式**
-- **调试菜单**（浮动窗口）：反引号键 `` ` `` 打开。含速度、缩放、无敌、层切换、
-  刷枪、刷假人等。
-- **控制台**（命令台）：反引号键打开。支持 `cv_*` 变量与大量命令，
-  例如 `db_invulnerable true`、`noclip`、`map normal`、`spawn mg5`。
+
+| 系统 | 按键 | 内容 |
+|---|---|---|
+| **控制台** | `` ` ``（反引号） | `cv_*` 变量与大量命令 |
+| **调试菜单** | `F9` | 图形化控件：速度滑块、缩放覆盖、无敌开关、层切换、刷枪下拉、刷假人（可选护甲） |
+
+> ⚠️ 上游的 `defaultBinds` 里 `toggle_console` 和 `toggle_debug_menu`
+> **都是空数组**，所以这两个系统虽然初始化了却打不开。
+> 上游只注册了 `alias toggle_debug_menu "toggle cv_debug_menu_open"` 命令，
+> 却忘了绑键。本分支补上：控制台 = 反引号，调试菜单 = F9。
+> 玩家可在设置 → 按键绑定里改成任意按键。
+
+控制台常用命令：
+
+```
+db_invulnerable true      # 无敌
+db_no_clip true           # 穿墙
+db_speed_override 0.05    # 移速覆盖
+map normal                # 切地图
+spawn mg5                 # 刷枪
+```
 
 ### 3. 插件清单
 
