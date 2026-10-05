@@ -791,7 +791,7 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
         if (!primaryItem) return;
         const primaryDefinition = primaryItem.definition;
 
-        if (this.hasPerk("extended_mags") && primaryDefinition.extendedCapacity !== undefined) {
+        if (this.hasPerk(PerkIds.ExtendedMags) && primaryDefinition.extendedCapacity !== undefined) {
             primaryItem.ammo = primaryDefinition.extendedCapacity;
         } else {
             primaryItem.ammo = primaryDefinition.capacity;
@@ -3570,7 +3570,10 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
     }
 
     processDebugPacket(data: DebugPacket): void {
-        if (!this.isDev) return;
+        // 调试功能门禁：默认对所有玩家开放（Config.allowPublicDebugMenu）。
+        // 原实现是 `if (!this.isDev) return`，只有 config.json 中 isDev=true
+        // 的角色才能用；这里改为读配置开关，默认 true = 所有人可用。
+        if (!this.isDev && !Config.allowPublicDebugMenu) return;
         this.baseSpeed = data.speed;
 
         const oldZoomOverride = this._zoomOverride;
