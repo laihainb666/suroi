@@ -1410,6 +1410,98 @@ const maps = {
             { name: "stark is pro", position: Vec(0.5, 0.5) }
         ]
     },
+    // Lightweight practice/training map for solo drills and quick dev tests
+    training: {
+        width: 1152,
+        height: 1152,
+        spawn: { mode: "fixed" },
+        beachSize: 24,
+        oceanSize: 64,
+        onGenerate(map) {
+            const center = Vec(map.width / 2, map.height / 2);
+
+            // Central spawn shelter: a ring of crates + rocks
+            const ring = [
+                { id: "regular_crate", offset: Vec(0, -90) },
+                { id: "regular_crate", offset: Vec(90, 0) },
+                { id: "regular_crate", offset: Vec(0, 90) },
+                { id: "regular_crate", offset: Vec(-90, 0) },
+                { id: "rock", offset: Vec(45, -45) },
+                { id: "rock", offset: Vec(-45, -45) },
+                { id: "rock", offset: Vec(45, 45) },
+                { id: "rock", offset: Vec(-45, 45) },
+                { id: "barrel", offset: Vec(0, -135) },
+                { id: "barrel", offset: Vec(135, 0) },
+                { id: "barrel", offset: Vec(0, 135) },
+                { id: "barrel", offset: Vec(-135, 0) }
+            ];
+            for (const { id, offset } of ring) {
+                map.generateObstacle(id, Vec.add(center, offset), { rotation: 0 });
+            }
+
+            // Loot walls: stack every droppable loot item in dense clusters
+            const dropLootWall = (origin: Vector): void => {
+                const pos = Vec.clone(origin);
+                for (const item of Loots.definitions) {
+                    if (
+                        ((item.defType === DefinitionType.Melee || item.defType === DefinitionType.Scope) && item.noDrop)
+                        || (item.defType === DefinitionType.Ammo && item.ephemeral)
+                        || (item.defType === DefinitionType.Backpack && item.level === 0)
+                        || item.defType === DefinitionType.Skin
+                        || item.devItem
+                        || item.hideInHUD
+                        || ((item.defType === DefinitionType.Armor || item.defType === DefinitionType.Backpack) && item.perk)
+                    ) continue;
+
+                    map.game.addLoot(item, pos, 0, { count: Infinity, pushVel: 0, jitterSpawn: false });
+                    pos.x += 12;
+                    if (pos.x > origin.x + 220) {
+                        pos.x = origin.x;
+                        pos.y += 12;
+                    }
+                }
+            };
+
+            dropLootWall(Vec.add(center, Vec(-260, -200)));
+            dropLootWall(Vec.add(center, Vec(120, -200)));
+            dropLootWall(Vec.add(center, Vec(-260, 80)));
+            dropLootWall(Vec.add(center, Vec(120, 80)));
+
+            // Scatter cover obstacles in the outer ring
+            const randomObstacles: MapDefinition["obstacles"] = {
+                oak_tree: 60,
+                rock: 70,
+                bush: 40,
+                barrel: 20,
+                regular_crate: 40
+            };
+
+            for (const obstacle in randomObstacles) {
+                const limit = randomObstacles[obstacle];
+                const definition = Obstacles.fromString(obstacle);
+
+                for (let i = 0; i < limit; i++) {
+                    const pos = map.getRandomPosition(
+                        definition.spawnHitbox ?? definition.hitbox,
+                        {
+                            collides: pos => Collision.circleCollision(center, 280, pos, 1)
+                        }
+                    );
+
+                    if (!pos) continue;
+
+                    map.generateObstacle(definition, pos);
+                }
+            }
+        },
+        places: [
+            { name: "Spawn", position: Vec(0.5, 0.5) },
+            { name: "Range NW", position: Vec(0.28, 0.35) },
+            { name: "Range NE", position: Vec(0.72, 0.35) },
+            { name: "Range SW", position: Vec(0.28, 0.65) },
+            { name: "Range SE", position: Vec(0.72, 0.65) }
+        ]
+    },
     layoutFixes: { // temporary map, delete later ass code
         width: 576,
         height: 576,

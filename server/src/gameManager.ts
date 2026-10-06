@@ -2,6 +2,7 @@ import { TeamMode } from "@common/constants";
 import { ModeName } from "@common/definitions/modes";
 import { pickRandomInArray } from "@common/utils/random";
 import Cluster, { type Worker } from "node:cluster";
+import { createConnection } from "node:net";
 import { Game } from "./game";
 import { PlayerSocketData } from "./objects/player";
 import { resetTeams } from "./server";
@@ -158,11 +159,49 @@ export class GameManager {
             && g.aliveCount < (Config.maxPlayersPerGame ?? Infinity)
         );
 
-        return (
-            eligibleGames.length
-                ? pickRandomInArray(eligibleGames)
-                : await this.newGame(undefined)
-        )?.id;
+        // 二创调整：优先把玩家塞进「人最多且仍可加入」的对局。
+        // 原版为 pickRandomInArray 随机分配，好友同时点开始会各进一局、永远碰不到面。
+        if (eligibleGames.length) {
+            let best = eligibleGames[0];
+            for (const game of eligibleGames) {
+                if (game.aliveCount > best.aliveCount) best = game;
+            }
+            return best.id;
+        }
+        return (await this.newGame(undefined))?.id;
+    }
+
+    /**
+     * 二创：房间号快捷加入。
+     * 确保指定 ID 的房间存在（不存在或已结束则新建），并等待其端口真正可连接。
+     * 返回是否可用。
+     */
+    async requestRoom(id: number): Promise<boolean> {
+        const maxGames = Config.maxGames ?? 1;
+        if (!Number.isInteger(id) || id < 0 || id >= maxGames) return false;
+
+        const existing = this.games[id];
+        if (!existing || existing.over) {
+            await this.newGame(id);
+        }
+
+        return await waitForGamePort(Config.port + id + 1);
+    }
+
+    /** 二创：房间列表快照（房间号 / 人数 / 是否可加入） */
+    getRoomsSnapshot(): { id: number, aliveCount: number, allowJoin: boolean, over: boolean }[] {
+        const maxGames = Config.maxGames ?? 1;
+        const rooms: { id: number, aliveCount: number, allowJoin: boolean, over: boolean }[] = [];
+        for (let i = 0; i < maxGames; i++) {
+            const game = this.games[i];
+            rooms.push({
+                id: i,
+                aliveCount: game?.aliveCount ?? 0,
+                allowJoin: game?.allowJoin ?? false,
+                over: game?.over ?? true
+            });
+        }
+        return rooms;
     }
 
     newGame(id: number | undefined): Promise<GameContainer | undefined> {
@@ -351,4 +390,32 @@ if (!Cluster.isPrimary) {
 
     game.setGameData({ allowJoin: true });
     game.log(`Listening on ${Config.hostname}:${Config.port + id + 1}`);
+}
+
+/**
+ * 二创：等待某个游戏子进程端口真正开始监听。
+ * 房间按需 fork，/api/getGame 返回后客户端会立刻发起 WS 连接，
+ * 若端口未就绪会直接连接失败，所以这里做一次带超时的 TCP 探测。
+ */
+function waitForGamePort(port: number, timeoutMs = 10000): Promise<boolean> {
+    return new Promise<boolean>(resolve => {
+        const deadline = Date.now() + timeoutMs;
+
+        const attempt = (): void => {
+            const socket = createConnection({ host: "127.0.0.1", port });
+
+            socket.once("connect", () => {
+                socket.destroy();
+                resolve(true);
+            });
+
+            socket.once("error", () => {
+                socket.destroy();
+                if (Date.now() >= deadline) resolve(false);
+                else setTimeout(attempt, 120);
+            });
+        };
+
+        attempt();
+    });
 }

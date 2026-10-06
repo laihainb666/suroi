@@ -140,8 +140,21 @@ if (Cluster.isPrimary && require.main === module) {
             },
             "/api/getGame": async req => {
                 let gameID: number | undefined;
-                const teamID = gameManager.teamMode.current !== TeamMode.Solo && getSearchParams(req).get("teamID");
-                if (teamID) {
+                const searchParams = getSearchParams(req);
+                const roomParam = searchParams.get("room");
+                const teamID = gameManager.teamMode.current !== TeamMode.Solo && searchParams.get("teamID");
+                if (roomParam !== null) {
+                    // 二创：房间号快捷加入 —— 直接进指定房间，不存在/已结束则临时开一间
+                    const roomID = Number.parseInt(roomParam, 10);
+                    const maxGames = Config.maxGames ?? 1;
+                    if (!Number.isInteger(roomID) || roomID < 0 || roomID >= maxGames) {
+                        return Response.json(
+                            { success: false, error: `房间号无效，当前可输入 0 ~ ${maxGames - 1}` },
+                            corsHeaders
+                        );
+                    }
+                    gameID = (await gameManager.requestRoom(roomID)) ? roomID : undefined;
+                } else if (teamID) {
                     gameID = customTeams?.get(teamID)?.gameID;
                 } else {
                     gameID = await gameManager.findGame();
@@ -150,7 +163,18 @@ if (Cluster.isPrimary && require.main === module) {
                 return Response.json(
                     gameID !== undefined
                         ? { success: true, gameID, mode: gameManager.mode }
-                        : { success: false },
+                        : { success: false, error: "该房间暂时无法加入，换个房间号试试" },
+                    corsHeaders
+                );
+            },
+            // 二创：房间列表，供客户端「房间号快捷加入」面板显示
+            "/api/rooms": async() => {
+                return Response.json(
+                    {
+                        success: true,
+                        maxGames: Config.maxGames ?? 1,
+                        rooms: gameManager.getRoomsSnapshot()
+                    },
                     corsHeaders
                 );
             },

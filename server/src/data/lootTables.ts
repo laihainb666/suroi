@@ -517,6 +517,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             loot: [
                 { item: "ak47", weight: 1 },
                 { item: "aug", weight: 1 },
+            { item: "famas", weight: 0.9 },
                 { item: "mp5k", weight: 1 },
                 { item: "model_37", weight: 1 },
                 { item: "mpx", weight: 1 },
@@ -649,6 +650,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "mp5k", weight: 0.85 },
             { item: "mp5", weight: 0.9 },
             { item: "aug", weight: 0.7 },
+            { item: "famas", weight: 0.63 },
             { item: "sks", weight: 0.7 },
             { item: "m3k", weight: 0.3 },
             { item: "m16a2", weight: 0.1 },
@@ -724,6 +726,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "ak47", weight: 1.1 },
             { item: "mp5k", weight: 1.07 },
             { item: "aug", weight: 1.05 },
+            { item: "famas", weight: 0.945 },
             { item: "hp18", weight: 1 },
             { item: "mpx", weight: 1 },
             { item: "sks", weight: 1 },
@@ -1253,6 +1256,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "model_37", weight: 0.95 },
             { item: "mp5k", weight: 0.85 },
             { item: "aug", weight: 0.7 },
+            { item: "famas", weight: 0.63 },
             { item: "sks", weight: 0.7 },
             { item: "m3k", weight: 0.3 },
             { item: "m16a2", weight: 0.1 },
@@ -1283,6 +1287,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "ak47", weight: 1.1 },
             { item: "mp5k", weight: 1.07 },
             { item: "aug", weight: 1.05 },
+            { item: "famas", weight: 0.945 },
             { item: "hp18", weight: 1 },
             { item: "blr", weight: 1 },
             { item: "mpx", weight: 1 },
@@ -2301,6 +2306,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
         green_gift: [
             [
                 { item: "aug", weight: 0.5 },
+            { item: "famas", weight: 0.45 },
                 { item: "blr", weight: 0.5 },
                 { item: "m16a2", weight: 0.5 },
                 { item: "cz600", weight: 0.35 },

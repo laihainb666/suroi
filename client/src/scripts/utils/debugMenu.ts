@@ -298,6 +298,15 @@ export class DebugMenu extends FloatingWindow<{ readonly content: JQuery<HTMLDiv
         });
         container.append(downBtn);
 
+        const consoleBtn = $("<button/>", {
+            text: "Console",
+            class: "debug-menu-input"
+        });
+        consoleBtn.on("click", () => {
+            GameConsole.toggle();
+        });
+        container.append(consoleBtn);
+
         this.ui.content.append(container);
     }
 

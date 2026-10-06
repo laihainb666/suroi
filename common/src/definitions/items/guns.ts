@@ -1222,6 +1222,43 @@ export const Guns = new InventoryItemDefinitions<GunDefinition>(([
         }
     },
     {
+        idString: "famas",
+        name: "FAMAS",
+        defType: DefinitionType.Gun,
+        tier: Tier.C,
+        ammoType: "556mm",
+        ammoSpawnAmount: 90,
+        capacity: 25,
+        extendedCapacity: 35,
+        reloadTime: 2.1,
+        fireDelay: 65,
+        switchDelay: 400,
+        speedMultiplier: 1,
+        recoilMultiplier: 0.7,
+        recoilDuration: 120,
+        fireMode: FireMode.Auto,
+        shotSpread: 3.5,
+        moveSpread: 10,
+        length: 6.9,
+        fists: {
+            left: Vec(96, -2),
+            right: Vec(38, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(75, -0.5) },
+        casingParticles: [{
+            position: Vec(2.5, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 10,
+            obstacleMultiplier: 1.5,
+            speed: 0.28,
+            range: 160
+        }
+    },
+    {
         idString: "arx160",
         name: "ARX-160",
         defType: DefinitionType.Gun,

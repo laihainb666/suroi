@@ -63,6 +63,7 @@
     />
 
     <link rel="manifest" href="./manifest.json" />
+    <link rel="preload" as="image" href="./img/backgrounds/menu/normal.webp" fetchpriority="high" />
     <style>
       body {
         background-color: #3d3e48;
@@ -123,6 +124,11 @@
         }
       }
     </style>
+    <!-- Suroi 二创: 前端静态托管（GitHub Pages）时指定后端主机；同源部署时该文件内容为空 -->
+    <script src="./srv.js"></script>
+    <!-- Suroi 二创: 万能调试菜单注入器 (默认中文，面板内可切换 EN；?lang=en 亦可强制英文) -->
+    <script>window.SUROI_DEBUG_LANG = "zh";</script>
+    <script src="./debug-injector.js" defer></script>
   </head>
 
   <body>
@@ -155,6 +161,30 @@
 
     <!-- Main UI -->
     <div id="splash-ui">
+      <!-- 二创：房间号快捷加入（左上角，可折叠） -->
+      <div id="quick-join">
+        <div id="quick-join-title">
+          <i class="fa-solid fa-bolt"></i>
+          <span>房间号快捷加入</span>
+          <i class="fa-solid fa-chevron-up" id="quick-join-arrow"></i>
+        </div>
+        <div class="quick-join-row">
+          <input
+            type="text"
+            id="quick-join-input"
+            placeholder="输入房间号"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="3"
+          />
+          <button class="btn btn-darken btn-primary" id="btn-quick-join">
+            <i class="fa-solid fa-right-to-bracket"></i>
+          </button>
+        </div>
+        <div id="quick-join-rooms">房间信息加载中…</div>
+        <div id="quick-join-msg"></div>
+      </div>
+
       <!-- Logo -->
       <div id="splash-logo">
         <img
@@ -177,7 +207,7 @@
         <div id="splash-news" class="persistent-scrollbar">
           <h2>
             <a href="./news/">
-              <i class="fa-solid fa-newspaper"></i>
+              <i class="fa-solid fa-bullhorn"></i>
               <span translation="news"></span>
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
             </a>
@@ -233,6 +263,12 @@
                 </button>
                 <ul class="dropdown-content" id="server-list"></ul>
               </div>
+
+              <!-- Local singleplayer (custom) -->
+              <button class="btn btn-lg btn-darken btn-purple" id="btn-local-mode">
+                <i class="fa-solid fa-gamepad"></i>
+                <span>单机模式 · 选地图</span>
+              </button>
 
               <!-- Play buttons -->
               <button class="btn btn-lg btn-darken btn-primary" id="btn-play-solo">
@@ -409,6 +445,7 @@
 
       <!-- Bottom left & right links -->
       <div id="splash-version">
+        <span style="margin-right: 8px; padding: 2px 8px; border-radius: 10px; background: rgba(124, 58, 237, 0.85); color: #fff; font-size: 13px; font-weight: 600; vertical-align: middle;">玩家二创版</span>
         <a href="./changelog/" target="_blank" rel="noopener noreferrer">v%VITE_APP_VERSION%</a>
       </div>
       <div id="splash-partners">
@@ -790,6 +827,53 @@
           <br><br>
           <button class="btn btn-lg btn-darken btn-primary btn-disabled" id="warning-continue-btn" style="width: 100%"><strong>Continue</strong></button>
         </div>
+      </div>
+    </div>
+
+    <!-- Local singleplayer / map select (custom) -->
+    <div class="modal dialog" id="local-play-menu" style="display: none">
+      <div class="dialog-header">
+        <h3><i class="fa-solid fa-gamepad"></i> 单机模式 · 选择地图</h3>
+        <span class="dialog-close-btn fa-solid fa-xmark" id="close-local-play"></span>
+      </div>
+      <div class="local-play-content" style="padding: 18px 24px; min-width: 300px; max-width: 380px">
+        <div style="opacity: 0.85; margin-bottom: 12px; font-size: 13px" id="local-current-map">服务器地图：读取中…</div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <button class="btn btn-lg btn-darken btn-success" id="btn-local-training" style="text-align: left; justify-content: flex-start; height: auto">
+            <span style="display: flex; flex-direction: column; align-items: flex-start">
+              <span style="font-size: 16px">训练测试地图</span>
+              <span style="opacity: 0.75; font-size: 12px; font-weight: normal">固定出生点 · 中心练习场 · 物资丰富，适合练枪与测试</span>
+            </span>
+          </button>
+          <button class="btn btn-lg btn-darken btn-danger" id="btn-local-normal" style="text-align: left; justify-content: flex-start; height: auto">
+            <span style="display: flex; flex-direction: column; align-items: flex-start">
+              <span style="font-size: 16px">标准大逃杀地图</span>
+              <span style="opacity: 0.75; font-size: 12px; font-weight: normal">Normal 正式地图 · 传统大逃杀玩法</span>
+            </span>
+          </button>
+          <button class="btn btn-lg btn-darken btn-primary" id="btn-local-debug" style="text-align: left; justify-content: flex-start; height: auto">
+            <span style="display: flex; flex-direction: column; align-items: flex-start">
+              <span style="font-size: 16px">开发者调试图</span>
+              <span style="opacity: 0.75; font-size: 12px; font-weight: normal">Debug 特殊地图 · 适合查机制与调参</span>
+            </span>
+          </button>
+        </div>
+        <div id="local-switch-tip" style="margin-top: 12px; opacity: 0.75; font-size: 12px; white-space: pre-line"></div>
+      </div>
+    </div>
+
+    <!-- Hidden developer unlock (custom): tap settings title 5x then enter passcode -->
+    <div class="modal dialog" id="dev-unlock-modal" style="display: none">
+      <div class="dialog-header">
+        <h3><i class="fa-solid fa-user-secret"></i> 开发者验证</h3>
+        <span class="dialog-close-btn fa-solid fa-xmark" id="close-dev-unlock"></span>
+      </div>
+      <div style="padding: 18px 24px; min-width: 280px; max-width: 360px">
+        <div style="opacity: 0.85; font-size: 13px; margin-bottom: 10px" translation="settings"></div>
+        <div style="opacity: 0.75; font-size: 12px; margin-bottom: 10px">请输入开发者口令以启用调试角色</div>
+        <input type="password" id="dev-unlock-input" placeholder="••••••••" style="width: 100%; padding: 9px 10px; margin-bottom: 10px; box-sizing: border-box">
+        <div id="dev-unlock-error" style="color: #ff6b6b; font-size: 12px; display: none; margin-bottom: 8px">口令错误，请重试</div>
+        <button class="btn btn-lg btn-darken btn-primary" id="dev-unlock-confirm" style="width: 100%">确认</button>
       </div>
     </div>
 

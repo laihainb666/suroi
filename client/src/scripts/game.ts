@@ -553,6 +553,12 @@ function renderWeaponComparison(payload?: WeaponComparisonPayload): void {
 export const Game = new (class Game {
     private _socket?: WebSocket;
 
+    // Auto-reconnect on abnormal close (code 1006 / empty reason) so the
+    // player isn't kicked back to the menu with a bare "Connection lost".
+    private _lastAddress = "";
+    private _reconnectAttempts = 0;
+    private _reconnectTimer?: ReturnType<typeof setTimeout>;
+
     socketCloseCallback?: (value: unknown) => void;
 
     readonly objects = new ObjectPool<ObjectMapping>();
@@ -674,15 +680,79 @@ export const Game = new (class Game {
         setUpCommands();
         await initTranslation();
         InputManager.init();
+        await setUpUI();
+        // 二创：调试接口无条件暴露，方便「非内置菜单」的外部脚本直接调试
+        {
+            const [
+                { DebugPacket },
+                { PacketType },
+                { Loots },
+                { Armors, ArmorType },
+                { GameConstants },
+                { Scopes, DEFAULT_SCOPE },
+                { translate }
+            ] = await Promise.all([
+                import("@common/packets/debugPacket"),
+                import("@common/packets/packet"),
+                import("@common/definitions/loots"),
+                import("@common/definitions/items/armors"),
+                import("@common/constants"),
+                import("@common/definitions/items/scopes"),
+                import("./utils/translations/translations")
+            ]);
+            (window as unknown as Record<string, unknown>).SuroiDebug = {
+                Game: this,
+                GameConsole,
+                DebugPacket,
+                PacketType,
+                Loots,
+                Armors,
+                ArmorType,
+                Scopes,
+                DEFAULT_SCOPE,
+                translate,
+                GameConstants
+            };
+        }
+
+        // Debug menu is available on DEBUG_CLIENT builds for every name (no role lock)
         if (DEBUG_CLIENT) {
             this.debugMenu = new (await import("./utils/debugMenu")).DebugMenu();
             this.debugMenu.init();
-            // 增强：上游在 console/commands.ts 末尾已经注册了
-            //   alias toggle_debug_menu "toggle cv_debug_menu_open"
-            // 但 defaultBinds 里没有给这个动作绑任何键，
-            // 导致调试菜单无法打开。键位已在 variables.ts 中补为 F9。
+
+            // Touch-only floating DEV button (mobile)
+            if (InputManager.isMobile) {
+                const devBtn = $("<button/>", {
+                    id: "btn-touch-dev-menu",
+                    text: "DEV"
+                });
+                devBtn.css({
+                    position: "fixed",
+                    right: "12px",
+                    top: "96px",
+                    width: "52px",
+                    height: "52px",
+                    padding: "0",
+                    borderRadius: "50%",
+                    background: "rgba(124, 77, 255, 0.9)",
+                    color: "#fff",
+                    border: "2px solid rgba(255,255,255,0.4)",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    lineHeight: "48px",
+                    textAlign: "center",
+                    zIndex: "2000",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.45)",
+                    touchAction: "manipulation",
+                    userSelect: "none"
+                });
+                devBtn.on("click", (e: JQuery.ClickEvent) => {
+                    e.stopPropagation();
+                    this.debugMenu?.toggle();
+                });
+                $("body").append(devBtn);
+            }
         }
-        await setUpUI();
         await fetchServerData();
         this.gasRender = new GasRender(PIXI_SCALE);
         MapManager.init();
@@ -833,6 +903,7 @@ export const Game = new (class Game {
 
     connect(address: string): void {
         this.error = false;
+        this._lastAddress = address;
 
         if (this.gameStarted) return;
 
@@ -840,6 +911,7 @@ export const Game = new (class Game {
         this._socket.binaryType = "arraybuffer";
 
         this._socket.onopen = (): void => {
+            this._reconnectAttempts = 0;
             this.pixi.start();
             this.music?.stop();
             this.connecting = false;
@@ -961,6 +1033,28 @@ export const Game = new (class Game {
                 alert(reason);
                 // reload the page with a time stamp to try clearing cache
                 location.search = `t=${Date.now()}`;
+            }
+
+            // Abnormal drop (no close reason / code 1006): instead of showing a
+            // dead-end "Connection lost", try to silently rejoin the same game.
+            if (!this.gameOver && this.gameStarted && !this.error && !e.reason) {
+                if (this._reconnectAttempts < 4) {
+                    this._reconnectAttempts++;
+                    ui.splashUi.fadeIn(400);
+                    ui.splashMsgText.html(`Connection lost. Reconnecting... (${this._reconnectAttempts}/4)`);
+                    ui.splashMsg.show();
+                    this.gameStarted = false; // allow connect() to run again
+
+                    const attempt = this._reconnectAttempts;
+                    this._reconnectTimer = setTimeout(() => {
+                        if (attempt !== this._reconnectAttempts) return; // superseded by a newer cycle
+                        if (!this._socket || this._socket.readyState === WebSocket.CLOSED) {
+                            this.connect(this._lastAddress);
+                        }
+                    }, 1500 * attempt);
+                    return;
+                }
+                this._reconnectAttempts = 0;
             }
 
             if (!this.gameOver) {
@@ -1119,6 +1213,8 @@ export const Game = new (class Game {
 
             SoundManager.stopAll();
             this.gameOver = true;
+            this._reconnectAttempts = 0;
+            if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
             this._socket?.close();
 
             ui.splashUi.fadeIn(400, async() => {

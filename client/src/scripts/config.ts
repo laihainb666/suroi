@@ -1,12 +1,22 @@
 import { type TeamMode } from "@common/constants";
 import type { ModeName } from "@common/definitions/modes";
 
+// 页面为 HTTPS 时必须用 wss://，否则浏览器按混合内容拦截 WebSocket（导致 Connection lost）
+const wsProto = location.protocol === "https:" ? "wss:" : "ws:";
+const httpProto = location.protocol === "https:" ? "https:" : "http:";
+
+// 二创：允许把前端静态文件托管到 GitHub Pages 等外部域名上，
+// 由 public/srv.js 里的 window.SUROI_SRV 指定后端主机（隧道域名）。
+// 未设置时保持与页面同源，行为与原来完全一致。
+declare global { interface Window { SUROI_SRV?: string } }
+const backendHost = window.SUROI_SRV ? window.SUROI_SRV : location.host;
+
 export const Config = {
     regions: {
         dev: {
             name: "Public Server",
-            mainAddress: "",
-            gameAddress: `ws://${location.host}/game/<gameID>`,
+            mainAddress: window.SUROI_SRV ? `${httpProto}//${backendHost}` : "",
+            gameAddress: `${wsProto}//${backendHost}/game/<gameID>`,
             offset: 0
         }/* ,
         na: {
