@@ -135,6 +135,7 @@ export class Player extends GameObject.derive(ObjectCategory.Player) {
         readonly waterOverlay: SuroiSprite
         readonly blood: Container
         readonly backMeleeSprite: SuroiSprite
+        emptyGlow?: Graphics
         bubbleSprite?: SuroiSprite
         disguiseSprite?: SuroiSprite
         disguiseSpriteTrunk?: SuroiSprite
@@ -213,6 +214,14 @@ export class Player extends GameObject.derive(ObjectCategory.Player) {
             blood: new Container(),
             backMeleeSprite: new SuroiSprite()
         };
+
+        // 二创：空弹发光提示光晕（当前枪无弹时显示）
+        const emptyGlowCtx = new GraphicsContext();
+        emptyGlowCtx.circle(0, 0, 15).fill({ color: 0xffe066, alpha: 0.3 });
+        emptyGlowCtx.circle(0, 0, 26).fill({ color: 0xffc61a, alpha: 0.12 });
+        this.images.emptyGlow = new Graphics(emptyGlowCtx).setVisible(false);
+        this.images.emptyGlow.zIndex = 4;
+        this.container.addChild(this.images.emptyGlow);
 
         if (Game.isTeamMode) {
             const createLegImage = (): SuroiSprite => new SuroiSprite().setPos(-35, 26).setZIndex(-1).setScale(1.5, 0.8);
@@ -1389,6 +1398,7 @@ export class Player extends GameObject.derive(ObjectCategory.Player) {
             this.images.weapon.setVisible(false);
             this.images.altWeapon.setVisible(false);
             this.images.muzzleFlash.setVisible(false);
+            this.images.emptyGlow?.setVisible(false);
             this.images.leftFist.setZIndex(-1);
             this.images.rightFist.setZIndex(-1);
             this.container.sortChildren();
@@ -1505,6 +1515,25 @@ export class Player extends GameObject.derive(ObjectCategory.Player) {
         }
 
         this.images.waterOverlay.setZIndex(this.images.body.zIndex + 1);
+
+        // 二创：空弹发光提示——主动玩家手持枪械且弹匣为空时显示光晕
+        const activePlayerWeapon = this.isActivePlayer
+            ? UIManager.inventory.weapons[UIManager.inventory.activeWeaponIndex]
+            : undefined;
+        const glow = this.images.emptyGlow;
+        if (glow !== undefined) {
+            const glowVisible = this.isActivePlayer
+                && !Game.spectating
+                && weaponDef.defType === DefinitionType.Gun
+                && activePlayerWeapon !== undefined
+                && activePlayerWeapon.count !== undefined
+                && activePlayerWeapon.count <= 0;
+            glow.visible = glowVisible;
+            if (glowVisible) {
+                glow.position.copyFrom(this.images.weapon.position);
+            }
+        }
+
         this.container.sortChildren();
     }
 

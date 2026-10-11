@@ -3,6 +3,7 @@ import { TintedParticles } from "@common/definitions/obstacles";
 import { Numeric } from "@common/utils/math";
 import { random, randomRotation } from "@common/utils/random";
 import { Vec, type Vector } from "@common/utils/vector";
+import { isAdvancedParticlesEnabled } from "../console/variables";
 import { SuroiSprite, toPixiCoords } from "../utils/pixi";
 import { CameraManager } from "./cameraManager";
 
@@ -42,7 +43,9 @@ class ParticleManagerClass {
     }
 
     spawnParticles(count: number, options: () => ParticleOptions): void {
-        for (let i = 0; i < count; i++) this.spawnParticle(options());
+        // 二创：高级粒子开关开启时粒子数量翻倍，特效更华丽
+        const mult = isAdvancedParticlesEnabled() ? 2 : 1;
+        for (let i = 0; i < count * mult; i++) this.spawnParticle(options());
     }
 
     addEmitter(options: EmitterOptions): ParticleEmitter {

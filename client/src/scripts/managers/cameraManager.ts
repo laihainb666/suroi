@@ -6,6 +6,7 @@ import { Vec, type Vector } from "@common/utils/vector";
 import { ShockwaveFilter } from "pixi-filters";
 import { Container, Filter } from "pixi.js";
 import { GameConsole } from "../console/gameConsole";
+import { isCameraShakeEnabled } from "../console/variables";
 import { Game } from "../game";
 import { LAYER_TRANSITION_DELAY, PIXI_SCALE } from "../utils/constants";
 import { SuroiSprite } from "../utils/pixi";
@@ -228,6 +229,8 @@ class CameraManagerClass {
 
     shake(duration: number, intensity: number): void {
         if (!GameConsole.getBuiltInCVar("cv_camera_shake_fx")) return;
+        // 二创：右上角「镜头震动反馈」开关可关闭震动
+        if (!isCameraShakeEnabled()) return;
         this.shaking = true;
         this.shakeStart = Date.now();
         this.shakeDuration = duration;

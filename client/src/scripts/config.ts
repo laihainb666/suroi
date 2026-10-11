@@ -1,12 +1,18 @@
 import { type TeamMode } from "@common/constants";
 import type { ModeName } from "@common/definitions/modes";
 
+/**
+ * 二创：浏览器中取当前访问的 hostname（本地 / 局域网 / 公网反代均可自适应）；
+ * 在 Node / Bun 等非浏览器环境（如 tests 下的校验脚本）回退到 localhost，避免 location 未定义。
+ */
+const host = typeof location === "undefined" ? "localhost" : location.hostname;
+
 export const Config = {
     regions: {
         dev: {
             name: "Local Server",
-            mainAddress: "http://127.0.0.1:8000",
-            gameAddress: "ws://127.0.0.1:<gameID>",
+            mainAddress: `http://${location.hostname}:8000`,
+            gameAddress: `ws://${location.hostname}:<gameID>`,
             offset: 8001
         }/* ,
         na: {

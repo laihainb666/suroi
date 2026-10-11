@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="121" height="48" fill="none"><defs><clipPath id="cp_vk9_uniq"><path fill="#fff" d="M0 0h121v48H0Z"/></clipPath></defs>
+<g transform="rotate(15 60 24)" clip-path="url(#cp_vk9_uniq)">
+  <!-- 枪管 -->
+  <rect x="9" y="21.6" width="30" height="4.0" rx="1.0" fill="#b8bcc4"/>
+  <rect x="7" y="21.0" width="8" height="5.2" rx="0.9" fill="#8a8f99"/>
+  <!-- 前握把 -->
+  <path d="M22 28.0 h5 l-1.6 5.8 h-3.6 Z" fill="#2c2e33"/>
+  <!-- 护木 -->
+  <rect x="18" y="20.0" width="20" height="6.6" rx="1.2" fill="#4a4d55"/>
+  <rect x="21" y="22.0" width="2.6" height="2.2" rx="0.5" fill="#2c2e33"/>
+  <rect x="27" y="22.0" width="2.6" height="2.2" rx="0.5" fill="#2c2e33"/>
+  <!-- 机匣 -->
+  <rect x="38" y="19.4" width="20" height="8.2" rx="1.4" fill="#c2c6ce"/>
+  <rect x="41" y="20.8" width="8" height="2.4" rx="0.6" fill="#d6dae0"/>
+  <!-- 抛壳窗 -->
+  <rect x="50" y="21.2" width="4.4" height="2.8" rx="0.5" fill="#1f2126"/>
+  <!-- 弹匣 -->
+  <path d="M52 27.6 h6.0 l1.2 6.4 h-8.4 Z" fill="#1f2126"/>
+  <path d="M53.2 29.0 h3.6 l0.7 4.0 h-5.0 Z" fill="#000"/>
+  <!-- 握把 -->
+  <path d="M48 27.2 h6.2 l-2.2 7.6 h-3.8 Z" fill="#2c2e33"/>
+  <!-- 枪托 -->
+  <path d="M58 20.2 h11 l-1.4 4.0 h-4.4 l-0.8 3.0 h-4.0 Z" fill="#4a4d55"/>
+  <!-- 顶部导轨与瞄具 -->
+  <rect x="36" y="17.0" width="14" height="1.4" rx="0.4" fill="#1f2126"/>
+  <rect x="40" y="14.6" width="5.4" height="2.6" rx="0.6" fill="#1f2126"/>
+  <rect x="41.2" y="13.6" width="3.0" height="1.4" rx="0.3" fill="#000"/>
+</g>
+</svg>

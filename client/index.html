@@ -63,6 +63,7 @@
     />
 
     <link rel="manifest" href="./manifest.json" />
+    <link rel="preload" as="image" href="./img/backgrounds/menu/halloween.webp" fetchpriority="high" />
     <style>
       body {
         background-color: #3d3e48;
@@ -123,6 +124,20 @@
         }
       }
     </style>
+    <!-- Suroi 二创: 前端静态托管（GitHub Pages）时指定后端主机；同源部署时该文件内容为空 -->
+    <script src="./srv.js"></script>
+    <!-- Suroi 二创: 万能调试菜单注入器 (默认中文，面板内可切换 EN；?lang=en 亦可强制英文) -->
+    <script>window.SUROI_DEBUG_LANG = "zh";</script>
+    <script>
+    // 二创：调试面板（debug-injector.js）仅在「设置-界面-开发者调试功能」开启后加载。
+    // 开启/关闭该开关都会触发整页刷新，以便正确挂载或卸载调试脚本。
+    if (localStorage.getItem("suroi_debug_enabled") === "1") {
+        const __debugInjector = document.createElement("script");
+        __debugInjector.src = "./debug-injector.js";
+        __debugInjector.defer = true;
+        document.head.appendChild(__debugInjector);
+    }
+</script>
   </head>
 
   <body>
@@ -155,6 +170,30 @@
 
     <!-- Main UI -->
     <div id="splash-ui">
+      <!-- 二创：房间号快捷加入（左上角，可折叠） -->
+      <div id="quick-join">
+        <div id="quick-join-title">
+          <i class="fa-solid fa-bolt"></i>
+          <span>房间号快捷加入</span>
+          <i class="fa-solid fa-chevron-up" id="quick-join-arrow"></i>
+        </div>
+        <div class="quick-join-row">
+          <input
+            type="text"
+            id="quick-join-input"
+            placeholder="输入房间号"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="3"
+          />
+          <button class="btn btn-darken btn-primary" id="btn-quick-join">
+            <i class="fa-solid fa-right-to-bracket"></i>
+          </button>
+        </div>
+        <div id="quick-join-rooms">房间信息加载中…</div>
+        <div id="quick-join-msg"></div>
+      </div>
+
       <!-- Logo -->
       <div id="splash-logo">
         <img
@@ -177,7 +216,7 @@
         <div id="splash-news" class="persistent-scrollbar">
           <h2>
             <a href="./news/">
-              <i class="fa-solid fa-newspaper"></i>
+              <i class="fa-solid fa-bullhorn"></i>
               <span translation="news"></span>
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
             </a>
@@ -233,6 +272,12 @@
                 </button>
                 <ul class="dropdown-content" id="server-list"></ul>
               </div>
+
+              <!-- Local singleplayer (custom) -->
+              <button class="btn btn-lg btn-darken btn-purple" id="btn-local-mode">
+                <i class="fa-solid fa-gamepad"></i>
+                <span>单机模式 · 选地图</span>
+              </button>
 
               <!-- Play buttons -->
               <button class="btn btn-lg btn-darken btn-primary" id="btn-play-solo">
@@ -355,6 +400,69 @@
               <span translation="settings"></span>
             </button>
           </div>
+
+          <!-- 二创：快捷开关（右上角） -->
+          <div id="suroi-quick-toggles" style="margin-top: 18px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.22); border-radius: 8px; background: rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 8px; min-width: 220px">
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 2px">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 快捷开关
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-all-maps">
+              <span class="setting-title" style="font-size: 13px">全部地图可调用</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-special-zones">
+              <span class="setting-title" style="font-size: 13px">进入特殊地界</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-debug-features-rb">
+              <span class="setting-title" style="font-size: 13px">开发者调试功能</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-first-maxgear-rb">
+              <span class="setting-title" style="font-size: 13px">首进满级（巨人）</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-lowpickup">
+              <span class="setting-title" style="font-size: 13px">可拾取低级装备</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-advanced-particles">
+              <span class="setting-title" style="font-size: 13px">高级粒子特效（更华丽）</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-high-quality">
+              <span class="setting-title" style="font-size: 13px">高画质模式（重载生效）</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <span class="setting-title" style="font-size: 13px">主界面背景</span>
+              <select id="menu-background-select" style="flex: 1; padding: 3px 6px; font-size: 13px; background: rgba(0,0,0,0.45); color: #e8f0ff; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px">
+                <option value="normal">Normal 原版</option>
+                <option value="fall">Fall 秋日</option>
+                <option value="halloween">Halloween 万圣节</option>
+                <option value="infection">Infection 感染</option>
+                <option value="hunted">Hunted 狩猎</option>
+                <option value="nye">NYE 新年</option>
+                <option value="winter">Winter 冬季</option>
+              </select>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-camera-shake">
+              <span class="setting-title" style="font-size: 13px">镜头震动反馈</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-auto-pickup">
+              <span class="setting-title" style="font-size: 13px">自动拾取</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-killfeed">
+              <span class="setting-title" style="font-size: 13px">击杀提示</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+              <input type="checkbox" id="toggle-emote-gm">
+              <span class="setting-title" style="font-size: 13px">表情触发 GM 工具（点击表情加速等）</span>
+            </label>
+          </div>
         </div>
 
         <!-- Featured Youtubr & Streamr -->
@@ -409,6 +517,7 @@
 
       <!-- Bottom left & right links -->
       <div id="splash-version">
+        <span style="margin-right: 8px; padding: 2px 8px; border-radius: 10px; background: rgba(124, 58, 237, 0.85); color: #fff; font-size: 13px; font-weight: 600; vertical-align: middle;">玩家二创版</span>
         <a href="./changelog/" target="_blank" rel="noopener noreferrer">v%VITE_APP_VERSION%</a>
       </div>
       <div id="splash-partners">
@@ -793,6 +902,54 @@
       </div>
     </div>
 
+    <!-- Local singleplayer / map select (custom) -->
+    <div class="modal dialog" id="local-play-menu" style="display: none">
+      <div class="dialog-header">
+        <h3><i class="fa-solid fa-gamepad"></i> 单机模式 · 选择地图</h3>
+        <span class="dialog-close-btn fa-solid fa-xmark" id="close-local-play"></span>
+      </div>
+      <div class="local-play-content" style="padding: 18px 24px; min-width: 300px; max-width: 380px">
+        <div style="opacity: 0.85; margin-bottom: 12px; font-size: 13px" id="local-current-map">服务器地图：读取中…</div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <button class="btn btn-lg btn-darken btn-success" id="btn-local-training" style="text-align: left; justify-content: flex-start; height: auto">
+            <span style="display: flex; flex-direction: column; align-items: flex-start">
+              <span style="font-size: 16px">训练测试地图</span>
+              <span style="opacity: 0.75; font-size: 12px; font-weight: normal">固定出生点 · 中心练习场 · 物资丰富，适合练枪与测试</span>
+            </span>
+          </button>
+          <button class="btn btn-lg btn-darken btn-danger" id="btn-local-normal" style="text-align: left; justify-content: flex-start; height: auto">
+            <span style="display: flex; flex-direction: column; align-items: flex-start">
+              <span style="font-size: 16px">标准大逃杀地图</span>
+              <span style="opacity: 0.75; font-size: 12px; font-weight: normal">Normal 正式地图 · 传统大逃杀玩法</span>
+            </span>
+          </button>
+          <button class="btn btn-lg btn-darken btn-primary" id="btn-local-debug" style="text-align: left; justify-content: flex-start; height: auto">
+            <span style="display: flex; flex-direction: column; align-items: flex-start">
+              <span style="font-size: 16px">开发者调试图</span>
+              <span style="opacity: 0.75; font-size: 12px; font-weight: normal">Debug 特殊地图 · 适合查机制与调参</span>
+            </span>
+          </button>
+        </div>
+        <div id="local-map-grid" style="display: none; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 46vh; overflow-y: auto; padding-right: 6px"></div>
+        <div id="local-switch-tip" style="margin-top: 12px; opacity: 0.75; font-size: 12px; white-space: pre-line"></div>
+      </div>
+    </div>
+
+    <!-- Hidden developer unlock (custom): tap settings title 5x then enter passcode -->
+    <div class="modal dialog" id="dev-unlock-modal" style="display: none">
+      <div class="dialog-header">
+        <h3><i class="fa-solid fa-user-secret"></i> 开发者验证</h3>
+        <span class="dialog-close-btn fa-solid fa-xmark" id="close-dev-unlock"></span>
+      </div>
+      <div style="padding: 18px 24px; min-width: 280px; max-width: 360px">
+        <div style="opacity: 0.85; font-size: 13px; margin-bottom: 10px" translation="settings"></div>
+        <div style="opacity: 0.75; font-size: 12px; margin-bottom: 10px">请输入开发者口令以启用调试角色</div>
+        <input type="password" id="dev-unlock-input" placeholder="••••••••" style="width: 100%; padding: 9px 10px; margin-bottom: 10px; box-sizing: border-box">
+        <div id="dev-unlock-error" style="color: #ff6b6b; font-size: 12px; display: none; margin-bottom: 8px">口令错误，请重试</div>
+        <button class="btn btn-lg btn-darken btn-primary" id="dev-unlock-confirm" style="width: 100%">确认</button>
+      </div>
+    </div>
+
     <!-- Settings menu -->
     <div class="modal dialog" id="settings-menu" style="display: none">
       <!-- Header -->
@@ -1107,6 +1264,18 @@
               <label>
                 <span class="setting-title" translation="settings_autopickup_dual_guns">Autopickup Dual Guns</span>
                 <input type="checkbox" id="toggle-autopickup-dual-guns">
+              </label>
+            </div>
+            <div class="modal-item checkbox-setting">
+              <label>
+                <span class="setting-title">开发者调试功能（调试菜单 / 控制台 / 开发者身份 / GM 工具）</span>
+                <input type="checkbox" id="toggle-debug-features">
+              </label>
+            </div>
+            <div class="modal-item checkbox-setting">
+              <label>
+                <span class="setting-title">首个进入对局玩家满级装备（巨人模式）</span>
+                <input type="checkbox" id="toggle-first-maxgear">
               </label>
             </div>
           </div>

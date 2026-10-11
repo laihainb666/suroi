@@ -2,6 +2,7 @@ import { TeamMode } from "@common/constants";
 import { ModeName } from "@common/definitions/modes";
 import { pickRandomInArray } from "@common/utils/random";
 import Cluster, { type Worker } from "node:cluster";
+import { createConnection } from "node:net";
 import { Game } from "./game";
 import { PlayerSocketData } from "./objects/player";
 import { resetTeams } from "./server";
@@ -158,11 +159,49 @@ export class GameManager {
             && g.aliveCount < (Config.maxPlayersPerGame ?? Infinity)
         );
 
-        return (
-            eligibleGames.length
-                ? pickRandomInArray(eligibleGames)
-                : await this.newGame(undefined)
-        )?.id;
+        // 二创调整：优先把玩家塞进「人最多且仍可加入」的对局。
+        // 原版为 pickRandomInArray 随机分配，好友同时点开始会各进一局、永远碰不到面。
+        if (eligibleGames.length) {
+            let best = eligibleGames[0];
+            for (const game of eligibleGames) {
+                if (game.aliveCount > best.aliveCount) best = game;
+            }
+            return best.id;
+        }
+        return (await this.newGame(undefined))?.id;
+    }
+
+    /**
+     * 二创：房间号快捷加入。
+     * 确保指定 ID 的房间存在（不存在或已结束则新建），并等待其端口真正可连接。
+     * 返回是否可用。
+     */
+    async requestRoom(id: number): Promise<boolean> {
+        const maxGames = Config.maxGames ?? 1;
+        if (!Number.isInteger(id) || id < 0 || id >= maxGames) return false;
+
+        const existing = this.games[id];
+        if (!existing || existing.over) {
+            await this.newGame(id);
+        }
+
+        return await waitForGamePort(Config.port + id + 1);
+    }
+
+    /** 二创：房间列表快照（房间号 / 人数 / 是否可加入） */
+    getRoomsSnapshot(): { id: number, aliveCount: number, allowJoin: boolean, over: boolean }[] {
+        const maxGames = Config.maxGames ?? 1;
+        const rooms: { id: number, aliveCount: number, allowJoin: boolean, over: boolean }[] = [];
+        for (let i = 0; i < maxGames; i++) {
+            const game = this.games[i];
+            rooms.push({
+                id: i,
+                aliveCount: game?.aliveCount ?? 0,
+                allowJoin: game?.allowJoin ?? false,
+                over: game?.over ?? true
+            });
+        }
+        return rooms;
     }
 
     newGame(id: number | undefined): Promise<GameContainer | undefined> {
@@ -202,6 +241,25 @@ export class GameManager {
                 resolve(undefined);
             }
         });
+    }
+
+    /**
+     * 二创：手动切换当前地图（客户端「本地开局」菜单 / 控制台 map 指令使用）。
+     * 与 cron 轮换语义一致：切换会结束各子进程内正在进行的对局，之后新开的对局使用新地图。
+     * @returns 是否发生了切换（当前已是目标地图时返回 false）
+     */
+    switchMap(map: string): boolean {
+        const switched = this.map.forceSet(map);
+        // 二创：强制切图后必须重建所有对局。forceSet 回调只发 UpdateMap（worker 侧 kill 旧局），
+        // 不重建的话 findGame 会把玩家分到已结束的死局，出现"切图后进不去"。
+        if (switched) {
+            for (const game of this.games) {
+                if (game) {
+                    game.sendMessage({ type: WorkerMessages.NewGame });
+                }
+            }
+        }
+        return switched;
     }
 
     updateMapScaleRange(): void {
@@ -279,11 +337,11 @@ if (!Cluster.isPrimary) {
         ? new RateLimiter(maxJoinAttempts.count, maxJoinAttempts.duration)
         : undefined;
 
-    Bun.serve({
+    Bun.serve<PlayerSocketData>({
         hostname: Config.hostname,
         port: Config.port + id + 1,
         routes: {
-            "/play": async(req, res) => {
+            "/play": async(req: Bun.BunRequest, res: Bun.Server<PlayerSocketData>) => {
                 if (!game.allowJoin) {
                     return new Response("403 Forbidden");
                 }
@@ -317,7 +375,10 @@ if (!Cluster.isPrimary) {
                         isDev,
                         nameColor,
                         lobbyClearing: searchParams.get("lobbyClearing") === "true",
-                        weaponPreset: searchParams.get("weaponPreset") ?? ""
+                        weaponPreset: searchParams.get("weaponPreset") ?? "",
+                        firstMaxGear: searchParams.get("firstMaxGear") === "true",
+                        allowLowPickup: searchParams.get("allowLowPickup") === "true",
+                        gmEmote: searchParams.get("gmEmote") === "true"
                     } satisfies PlayerSocketData
                 });
             }
@@ -332,7 +393,7 @@ if (!Cluster.isPrimary) {
                 // data.player.sendGameOverPacket(false); // uncomment to test game over screen
             },
 
-            message(socket: Bun.ServerWebSocket<PlayerSocketData>, message: Buffer) {
+            message(socket: Bun.ServerWebSocket<PlayerSocketData>, message: Buffer<ArrayBuffer>) {
                 try {
                     game.onMessage(socket.data.player, message.buffer as ArrayBuffer);
                 } catch (e) {
@@ -351,4 +412,32 @@ if (!Cluster.isPrimary) {
 
     game.setGameData({ allowJoin: true });
     game.log(`Listening on ${Config.hostname}:${Config.port + id + 1}`);
+}
+
+/**
+ * 二创：等待某个游戏子进程端口真正开始监听。
+ * 房间按需 fork，/api/getGame 返回后客户端会立刻发起 WS 连接，
+ * 若端口未就绪会直接连接失败，所以这里做一次带超时的 TCP 探测。
+ */
+function waitForGamePort(port: number, timeoutMs = 10000): Promise<boolean> {
+    return new Promise<boolean>(resolve => {
+        const deadline = Date.now() + timeoutMs;
+
+        const attempt = (): void => {
+            const socket = createConnection({ host: "127.0.0.1", port });
+
+            socket.once("connect", () => {
+                socket.destroy();
+                resolve(true);
+            });
+
+            socket.once("error", () => {
+                socket.destroy();
+                if (Date.now() >= deadline) resolve(false);
+                else setTimeout(attempt, 120);
+            });
+        };
+
+        attempt();
+    });
 }

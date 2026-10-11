@@ -214,6 +214,8 @@ export const CVarCasters = Object.freeze({
     db_no_clip: Casters.toBoolean,
     db_invulnerable: Casters.toBoolean,
     db_hide_ceilings: Casters.toBoolean,
+    db_one_shot_kill: Casters.toBoolean,
+    db_infinite_ammo: Casters.toBoolean,
 
     mb_controls_enabled: Casters.toBoolean,
     mb_joystick_size: Casters.toNumber,
@@ -400,6 +402,8 @@ export const defaultClientCVars: SimpleCVarMapping = Object.freeze({
     db_no_clip: false,
     db_invulnerable: false,
     db_hide_ceilings: false,
+    db_one_shot_kill: false,
+    db_infinite_ammo: false,
 
     mb_switch_joysticks: false,
     mb_controls_enabled: true,
@@ -459,12 +463,170 @@ export const defaultBinds = Object.freeze({
     "+emote_wheel": ["Mouse2"],
     "+map_ping_wheel": ["C"],
     "fullscreen": [],
-    "toggle_console": [],
+    // 增强：控制台默认绑定反引号（`）。上游默认为空数组，
+    // 导致控制台虽然初始化了但没有任何按键可以打开。
+    "toggle_console": ["Backquote"],
+    // 增强：调试菜单的开关命令。上游完全没有这个绑定，
+    // debugMenu 只被 new 出来却没有任何地方调用 open()，等于开不了。
+    "toggle_debug_menu": ["F9"],
     "+map_ping": [],
     "toggle_slot_lock": ["L"],
     "screen_record": [],
     "toggle pf_net_graph 0 1 2": []
 } as Record<string, string[]>);
+
+// === 二创：开发者调试功能 / 首进满级装备 设置开关（localStorage 持久化） ===
+// 这两个开关独立于 DEBUG_CLIENT 编译开关，用户可在「设置-界面」中随时开启/关闭。
+// - 开发者调试功能关闭时：不加载调试面板、F9/` 键无效、DEV 解锁入口隐藏、
+//   dev 身份/密码/名字颜色/武器预设不随对局参数发送、角色恢复与自动注入被禁用。
+// - 首进满级装备开关：开 → 客户端在进入对局时追加 firstMaxGear=true，
+//   由服务端 juggernautPlugin 将首个带此标记的玩家设为巨人（满配）。
+const DEBUG_FEATURES_KEY = "suroi_debug_enabled";
+const FIRST_MAXGEAR_KEY = "suroi_first_maxgear";
+const ALL_MAPS_KEY = "suroi_all_maps";
+const SPECIAL_ZONES_KEY = "suroi_special_zones";
+const LOW_PICKUP_KEY = "suroi_low_pickup";
+const MENU_BACKGROUND_KEY = "suroi_menu_background";
+const ADVANCED_PARTICLES_KEY = "suroi_advanced_particles";
+const HIGH_QUALITY_KEY = "suroi_high_quality";
+
+export function isDebugFeaturesEnabled(): boolean {
+    try { return localStorage.getItem(DEBUG_FEATURES_KEY) === "1"; } catch { return false; }
+}
+
+export function setDebugFeaturesEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(DEBUG_FEATURES_KEY, "1");
+        else localStorage.removeItem(DEBUG_FEATURES_KEY);
+    } catch { /* ignore */ }
+}
+
+export function isFirstMaxGearEnabled(): boolean {
+    try { return localStorage.getItem(FIRST_MAXGEAR_KEY) === "1"; } catch { return false; }
+}
+
+export function setFirstMaxGearEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(FIRST_MAXGEAR_KEY, "1");
+        else localStorage.removeItem(FIRST_MAXGEAR_KEY);
+    } catch { /* ignore */ }
+}
+
+export function isAllMapsEnabled(): boolean {
+    try { return localStorage.getItem(ALL_MAPS_KEY) === "1"; } catch { return false; }
+}
+
+export function setAllMapsEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(ALL_MAPS_KEY, "1");
+        else localStorage.removeItem(ALL_MAPS_KEY);
+    } catch { /* ignore */ }
+}
+
+export function isSpecialZonesEnabled(): boolean {
+    try { return localStorage.getItem(SPECIAL_ZONES_KEY) === "1"; } catch { return false; }
+}
+
+export function setSpecialZonesEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(SPECIAL_ZONES_KEY, "1");
+        else localStorage.removeItem(SPECIAL_ZONES_KEY);
+    } catch { /* ignore */ }
+}
+
+export function isLowPickupEnabled(): boolean {
+    try { return localStorage.getItem(LOW_PICKUP_KEY) === "1"; } catch { return false; }
+}
+
+export function setLowPickupEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(LOW_PICKUP_KEY, "1");
+        else localStorage.removeItem(LOW_PICKUP_KEY);
+    } catch { /* ignore */ }
+}
+
+export function getMenuBackgroundKey(): string {
+    try { return localStorage.getItem(MENU_BACKGROUND_KEY) ?? "halloween"; } catch { return "halloween"; }
+}
+
+export function setMenuBackgroundKey(key: string): void {
+    try { localStorage.setItem(MENU_BACKGROUND_KEY, key); } catch { /* ignore */ }
+}
+
+export function isAdvancedParticlesEnabled(): boolean {
+    try { return localStorage.getItem(ADVANCED_PARTICLES_KEY) === "1"; } catch { return false; }
+}
+
+export function setAdvancedParticlesEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(ADVANCED_PARTICLES_KEY, "1");
+        else localStorage.removeItem(ADVANCED_PARTICLES_KEY);
+    } catch { /* ignore */ }
+}
+
+export function isHighQualityEnabled(): boolean {
+    try { return localStorage.getItem(HIGH_QUALITY_KEY) === "1"; } catch { return false; }
+}
+
+export function setHighQualityEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(HIGH_QUALITY_KEY, "1");
+        else localStorage.removeItem(HIGH_QUALITY_KEY);
+    } catch { /* ignore */ }
+}
+
+// === 二创：体验优化开关（localStorage 持久化） ===
+// 镜头震动 / 自动拾取 / 击杀提示：默认开启，可在右上角「快捷开关」随时关闭。
+// 表情触发 GM 工具（点击表情加速等）：默认关闭，开启后 /play 会携带 gmEmote=true，
+// 服务端 gmToolsPlugin 据此放行表情触发的 GM 功能（8 倍速、刷枪、无敌等）。
+const CAMERA_SHAKE_KEY = "suroi_camera_shake";
+const AUTO_PICKUP_KEY = "suroi_auto_pickup";
+const KILLFEED_KEY = "suroi_killfeed";
+const EMOTE_GM_KEY = "suroi_emote_gm";
+
+export function isCameraShakeEnabled(): boolean {
+    try { return localStorage.getItem(CAMERA_SHAKE_KEY) !== "0"; } catch { return true; }
+}
+
+export function setCameraShakeEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.removeItem(CAMERA_SHAKE_KEY);
+        else localStorage.setItem(CAMERA_SHAKE_KEY, "0");
+    } catch { /* ignore */ }
+}
+
+export function isAutoPickupEnabled(): boolean {
+    try { return localStorage.getItem(AUTO_PICKUP_KEY) !== "0"; } catch { return true; }
+}
+
+export function setAutoPickupEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.removeItem(AUTO_PICKUP_KEY);
+        else localStorage.setItem(AUTO_PICKUP_KEY, "0");
+    } catch { /* ignore */ }
+}
+
+export function isKillfeedEnabled(): boolean {
+    try { return localStorage.getItem(KILLFEED_KEY) !== "0"; } catch { return true; }
+}
+
+export function setKillfeedEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.removeItem(KILLFEED_KEY);
+        else localStorage.setItem(KILLFEED_KEY, "0");
+    } catch { /* ignore */ }
+}
+
+export function isEmoteGMEnabled(): boolean {
+    try { return localStorage.getItem(EMOTE_GM_KEY) === "1"; } catch { return false; }
+}
+
+export function setEmoteGMEnabled(enabled: boolean): void {
+    try {
+        if (enabled) localStorage.setItem(EMOTE_GM_KEY, "1");
+        else localStorage.removeItem(EMOTE_GM_KEY);
+    } catch { /* ignore */ }
+}
 
 export class ConVar<Value = string> {
     readonly name: string;

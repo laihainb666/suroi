@@ -20,7 +20,7 @@ import { InputManager } from "./inputManager";
 import { SoundManager } from "./soundManager";
 import { UIManager } from "./uiManager";
 import type { Tween } from "../utils/tween";
-import { Modes } from "@common/definitions/modes";
+import { ExtractionZones, Modes } from "@common/definitions/modes";
 
 class MapManagerClass {
     private _expanded = false;
@@ -53,6 +53,10 @@ class MapManagerClass {
     private _gasPos = Vec(0, 0);
     private _gasRadius = 0;
     readonly safeZone = new Graphics();
+
+    // 二创：撤离模式（地铁逃生）撤离点小地图标记
+    readonly extractionZoneGraphics = new Graphics();
+    private readonly _extractionZoneLabels: Text[] = [];
 
     private readonly _objectsContainer = new Container();
     readonly container = new Container();
@@ -130,6 +134,7 @@ class MapManagerClass {
             this.placesContainer,
             this.gasRender.graphics,
             this.safeZone,
+            this.extractionZoneGraphics,
             this.pingGraphics,
             this.pingsContainer,
             this.indicatorsContainer,
@@ -572,6 +577,41 @@ class MapManagerClass {
 
         void this.renderMap();
         this.resize();
+        this.drawExtractionZones();
+    }
+
+    // 二创：撤离模式（地铁逃生）小地图撤离点绘制
+    drawExtractionZones(): void {
+        if (Game.modeName !== "extraction") return;
+        const zones = ExtractionZones["metro"];
+        if (!zones?.length) return;
+
+        this.extractionZoneGraphics.clear();
+        for (const label of this._extractionZoneLabels) label.destroy();
+        this._extractionZoneLabels.length = 0;
+
+        const graphics = this.extractionZoneGraphics;
+        for (const zone of zones) {
+            // 外圈描边
+            graphics.setStrokeStyle({ color: 0x00ff88, width: 3, cap: "round" });
+            graphics.arc(zone.position.x, zone.position.y, zone.radius, 0, Math.PI * 2);
+            graphics.stroke();
+
+            // 内圈半透明填充
+            graphics.fill({ color: 0x00ff88, alpha: 0.15 });
+            graphics.circle(zone.position.x, zone.position.y, zone.radius);
+            graphics.fill();
+
+            // 撤离点标签
+            const label = new Text({
+                text: `撤离点 ${zone.name ?? ""}`,
+                style: { fill: "#00ff88", fontFamily: "Inter", fontWeight: "700", fontSize: 24 }
+            });
+            label.anchor.set(0.5);
+            label.position = Vec(zone.position.x, zone.position.y - zone.radius - 14);
+            this.placesContainer.addChild(label);
+            this._extractionZoneLabels.push(label);
+        }
     }
 
     update(): void {
@@ -887,6 +927,9 @@ class MapManagerClass {
         this.indicatorsContainer.removeChildren();
         this.teammateIndicators.clear();
         this.teammateIndicatorContainer.removeChildren();
+        this.extractionZoneGraphics.clear();
+        for (const label of this._extractionZoneLabels) label.destroy();
+        this._extractionZoneLabels.length = 0;
     }
 }
 

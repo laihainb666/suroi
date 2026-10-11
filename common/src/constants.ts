@@ -273,6 +273,7 @@ export const enum InputActions {
     Cancel,
     UseItem,
     Emote,
+    SetGmEmote,
     MapPing,
     Loot,
     ExplodeC4

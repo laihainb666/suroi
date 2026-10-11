@@ -30,7 +30,7 @@ export const corsHeaders = {
     }
 };
 
-export function getIP(req: Bun.BunRequest, res: Bun.Server): string {
+export function getIP(req: Bun.BunRequest, res: Bun.Server<unknown>): string {
     return (
         Config.ipHeader
             ? req.headers.get(Config.ipHeader)
@@ -159,6 +159,12 @@ export type StaticOrSwitched<T extends Switchable> = T | Switched<T>;
 export class Switcher<T extends Switchable> {
     private readonly _cron: Cron | undefined;
 
+    /** 二创：构造时传入的回调，forceSet 手动切换时复用同一套通知逻辑 */
+    private readonly _callback: (current: T, next: T) => void;
+
+    /** 二创：轮换列表（静态配置时为 undefined），forceSet 用于同步索引与下一项 */
+    private readonly _rotation: T[] | undefined = undefined;
+
     private _index = 0;
     get index(): number { return this._index; }
 
@@ -171,7 +177,10 @@ export class Switcher<T extends Switchable> {
     get nextSwitch(): number | undefined { return this._cron?.nextRun()?.getTime(); }
 
     constructor(name: string, schedule: StaticOrSwitched<T>, callback: (current: T, next: T) => void) {
+        this._callback = callback;
+
         if (typeof schedule === "object") {
+            this._rotation = schedule.rotation;
             const rotation = schedule.rotation;
             const length = rotation.length;
             const filename = `${name}.txt`;
@@ -193,5 +202,27 @@ export class Switcher<T extends Switchable> {
             this._current = schedule;
             this._next = undefined;
         }
+    }
+
+    /**
+     * 二创：立即强制切换到指定值（不等待 cron 排程），并触发与自动轮换相同的回调。
+     * 用于管理接口手动切图（/api/admin/switchmap）。
+     * @returns 是否发生了变化（值相同则返回 false，不触发回调）
+     */
+    forceSet(value: T): boolean {
+        if (this._current === value) return false;
+
+        this._current = value;
+
+        if (this._rotation) {
+            const index = this._rotation.indexOf(value);
+            if (index !== -1) {
+                this._index = index;
+                this._next = this._rotation[(index + 1) % this._rotation.length];
+            }
+        }
+
+        this._callback(this._current, this._next ?? this._current);
+        return true;
     }
 }

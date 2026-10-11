@@ -1,5 +1,6 @@
 import { type ReferenceTo } from "../utils/objectDefinitions";
 import { FloorNames } from "../utils/terrain";
+import { Vec, type Vector } from "../utils/vector";
 import { type ScopeDefinition } from "./items/scopes";
 
 export type ModeName =
@@ -10,7 +11,11 @@ export type ModeName =
     | "hunted"
     | "birthday"
     | "winter"
-    | "nye";
+    | "nye"
+    | "extraction"
+    | "night"
+    | "storm"
+    | "dawn";
 
 export type SpritesheetNames = ModeName | "shared";
 
@@ -269,4 +274,113 @@ export const Modes: Record<ModeName, ModeDefinition> = {
         defaultGroundFloor: FloorNames.Sand,
         enhancedAirdropParticles: true
     },
+    extraction: {
+        colors: {
+            grass: "hsl(214, 14%, 24%)",
+            water: "hsl(216, 24%, 13%)",
+            border: "hsl(214, 18%, 9%)",
+            beach: "hsl(210, 12%, 26%)",
+            riverBank: "hsl(210, 12%, 23%)",
+            trail: "hsl(214, 14%, 30%)",
+            gas: "hsla(210, 100%, 60%, 0.4)",
+            void: "hsl(216, 18%, 5%)"
+        },
+        spriteSheets: ["shared", "normal"],
+        defaultScope: "1x_scope",
+        canvasFilters: {
+            brightness: 0.82,
+            saturation: 0.68
+        }
+    },
+    storm: {
+        colors: {
+            grass: "hsl(46, 34%, 22%)",
+            water: "hsl(48, 30%, 14%)",
+            border: "hsl(44, 22%, 8%)",
+            beach: "hsl(42, 28%, 28%)",
+            riverBank: "hsl(42, 26%, 24%)",
+            trail: "hsl(46, 34%, 30%)",
+            gas: "hsla(40, 100%, 45%, 0.5)",
+            void: "hsl(44, 16%, 6%)"
+        },
+        spriteSheets: ["shared", "normal"],
+        canvasFilters: {
+            brightness: 0.88,
+            saturation: 0.62
+        },
+        bulletTrailAdjust: "hsla(40, 80%, 60%, 0.7)",
+        particleEffects: {
+            frames: ["leaf_particle_1", "leaf_particle_2", "leaf_particle_3"],
+            delay: 400,
+            tint: 0x8a7a45,
+            gravity: true
+        }
+    },
+    dawn: {
+        colors: {
+            grass: "hsl(96, 30%, 32%)",
+            water: "hsl(190, 40%, 24%)",
+            border: "hsl(220, 18%, 14%)",
+            beach: "hsl(60, 28%, 40%)",
+            riverBank: "hsl(70, 26%, 34%)",
+            trail: "hsl(96, 28%, 40%)",
+            gas: "hsla(190, 100%, 75%, 0.4)",
+            void: "hsl(220, 12%, 9%)"
+        },
+        spriteSheets: ["shared", "normal"],
+        defaultScope: "2x_scope",
+        canvasFilters: {
+            brightness: 1.08,
+            saturation: 0.8
+        },
+        particleEffects: {
+            frames: ["leaf_particle_1", "leaf_particle_2", "leaf_particle_3"],
+            delay: 900,
+            tint: 0xcfe8ff,
+            gravity: false
+        }
+    },
+    night: {
+        colors: {
+            grass: "hsl(220, 22%, 16%)",
+            water: "hsl(216, 45%, 11%)",
+            border: "hsl(220, 30%, 7%)",
+            beach: "hsl(220, 18%, 20%)",
+            riverBank: "hsl(220, 18%, 17%)",
+            trail: "hsl(220, 16%, 26%)",
+            gas: "hsla(17, 100%, 50%, 0.55)",
+            void: "hsl(226, 24%, 4%)"
+        },
+        spriteSheets: ["shared", "normal"],
+        defaultScope: "2x_scope",
+        canvasFilters: {
+            brightness: 0.45,
+            saturation: 0.55
+        },
+        particleEffects: {
+            frames: ["leaf_particle_1", "leaf_particle_2", "leaf_particle_3"],
+            delay: 1500
+        }
+    },
+};
+
+export interface ExtractionZone {
+    readonly position: Vector
+    readonly radius: number
+    readonly name: string
+}
+
+/**
+ * 二创：地铁逃生（搜刮撤离）模式的撤离点。
+ * key 为地图 idString，服务端用于撤离判定，客户端用于绘制撤离区。
+ */
+export const ExtractionZones: Record<string, readonly ExtractionZone[]> = {
+    metro: [
+        { position: Vec(768, 176), radius: 96, name: "A 出口" },
+        { position: Vec(768, 1360), radius: 96, name: "B 出口" },
+        { position: Vec(176, 768), radius: 96, name: "C 出口" },
+        { position: Vec(1360, 768), radius: 96, name: "D 出口" },
+        { position: Vec(768, 480), radius: 96, name: "E 站台出口" },
+        { position: Vec(768, 1056), radius: 96, name: "F 站台出口" }
+    ]
 };

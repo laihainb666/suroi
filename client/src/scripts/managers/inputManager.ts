@@ -551,8 +551,12 @@ class InputManagerClass {
         // If the user is interacting with a text field or something of the sort, inputs should
         // not be honored
         // but ignore this if its a debug menu input so you can still move while eg dragging a slider
+        // 二创修复：焦点落在调试面板/控制台等非输入元素上时，keydown 仍拦截（避免误触发），
+        // 但 keyup/pointerup（down=false）必须放行，否则松开方向键的释放指令会被吞掉，
+        // 导致角色“强行一直朝该方向移动”的严重 bug。
         if (document.activeElement !== document.body
             && !document.activeElement?.classList.contains("debug-menu-input")
+            && down
         ) return;
 
         const { type } = event;

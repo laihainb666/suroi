@@ -249,7 +249,8 @@ export class Loot<Def extends LootDefinition = LootDefinition> extends BaseGameO
                 }
 
                 if (definition.level < threshold) {
-                    return InventoryMessages.BetterItemEquipped;
+                    // 二创：开启「可拾取低级装备」后，已装备更高级护甲也能继续捡低级（拾取时换装，旧装备掉落）
+                    return player.allowLowPickup ? true : InventoryMessages.BetterItemEquipped;
                 } else if (definition.level === threshold) {
                     return InventoryMessages.ItemAlreadyEquipped;
                 } else {
@@ -258,7 +259,8 @@ export class Loot<Def extends LootDefinition = LootDefinition> extends BaseGameO
             }
             case DefinitionType.Backpack: {
                 if (definition.level < inventory.backpack.level) {
-                    return InventoryMessages.BetterItemEquipped;
+                    // 二创：同护甲——开启后可拾取低级背包
+                    return player.allowLowPickup ? true : InventoryMessages.BetterItemEquipped;
                 } else if (definition.level === inventory.backpack.level) {
                     return InventoryMessages.ItemAlreadyEquipped;
                 } else {
@@ -431,6 +433,12 @@ export class Loot<Def extends LootDefinition = LootDefinition> extends BaseGameO
                     inventory.throwableItemMap.get(idString)!.count = inventory.items.getItem(idString);
                 } else {
                     modifyItemCollections();
+
+                    // 二创：捡到子弹后，若当前手持同弹药类型且未满弹的枪，自动上膛
+                    const active = player.inventory.activeWeapon;
+                    if (active instanceof GunItem && active.definition.ammoType === idString) {
+                        active.reload(true);
+                    }
                 }
                 break;
             }

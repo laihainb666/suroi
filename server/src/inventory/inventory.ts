@@ -217,7 +217,8 @@ export class Inventory {
         owner.effectiveSwitchDelay = effectiveSwitchDelay;
         item.switchDate = now;
 
-        if (item.isGun && item.ammo <= 0) {
+        // 二创：切到枪械且未满弹时，延时自动上膛（reload 内部会校验弹药与满弹状态）
+        if (item.isGun && item.ammo < item.definition.capacity) {
             this._reloadTimeout = this.owner.game.addTimeout(
                 item.reload.bind(item),
                 owner.effectiveSwitchDelay

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="121" height="48" fill="none"><defs><clipPath id="cp_mp7_uniq"><path fill="#fff" d="M0 0h121v48H0Z"/></clipPath></defs>
+<g transform="rotate(15 60 24)" clip-path="url(#cp_mp7_uniq)">
+  <!-- 枪管 -->
+  <rect x="8" y="21.4" width="32" height="4.4" rx="1.1" fill="#3c4352"/>
+  <rect x="6" y="20.8" width="9" height="5.6" rx="1" fill="#2f343f"/>
+  <!-- 护木（带散热孔） -->
+  <rect x="24" y="19.8" width="20" height="7.2" rx="1.3" fill="#4a5264"/>
+  <rect x="27" y="22.4" width="3" height="2.4" rx="0.6" fill="#2f343f"/>
+  <rect x="33" y="22.4" width="3" height="2.4" rx="0.6" fill="#2f343f"/>
+  <!-- 机匣 -->
+  <rect x="44" y="19.2" width="22" height="8.6" rx="1.5" fill="#3c4352"/>
+  <rect x="47" y="20.6" width="9" height="2.6" rx="0.7" fill="#4a5264"/>
+  <!-- 抛壳窗 -->
+  <rect x="56" y="21.0" width="5" height="3.2" rx="0.6" fill="#23272f"/>
+  <!-- 弹匣 -->
+  <path d="M58 27.8 h6.4 l1.4 6.8 h-9.2 Z" fill="#2f343f"/>
+  <path d="M59.2 29.2 h4 l0.8 4.2 h-5.6 Z" fill="#1e2229"/>
+  <!-- 握把 -->
+  <path d="M54 27.4 h6.6 l-2.4 7.8 h-4.2 Z" fill="#2f343f"/>
+  <!-- 折叠枪托 -->
+  <rect x="66" y="20.0" width="13" height="7.0" rx="1.2" fill="#4a5264"/>
+  <rect x="69" y="21.4" width="8" height="1.6" rx="0.6" fill="#3c4352"/>
+  <!-- 瞄准镜 -->
+  <rect x="42" y="16.6" width="10" height="2.6" rx="0.7" fill="#23272f"/>
+  <rect x="44" y="15.8" width="6" height="3.0" rx="0.6" fill="#161a20"/>
+</g>
+</svg>

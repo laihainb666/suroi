@@ -72,7 +72,9 @@ export class DebugMenu extends FloatingWindow<{ readonly content: JQuery<HTMLDiv
             layerOffset: this.data.layerOffset,
             spawnDummy: this.data.spawnDummy,
             dummyVest: this.data.dummyVest,
-            dummyHelmet: this.data.dummyHelmet
+            dummyHelmet: this.data.dummyHelmet,
+            oneShotKill: GameConsole.getBuiltInCVar("db_one_shot_kill"),
+            infiniteAmmo: GameConsole.getBuiltInCVar("db_infinite_ammo")
         } satisfies DebugPacket));
 
         // reset so it doesn't send it again next packet
@@ -297,6 +299,15 @@ export class DebugMenu extends FloatingWindow<{ readonly content: JQuery<HTMLDiv
             this.sendPacket();
         });
         container.append(downBtn);
+
+        const consoleBtn = $("<button/>", {
+            text: "Console",
+            class: "debug-menu-input"
+        });
+        consoleBtn.on("click", () => {
+            GameConsole.toggle();
+        });
+        container.append(consoleBtn);
 
         this.ui.content.append(container);
     }

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="121" height="48" fill="none"><defs><clipPath id="cp_m4a1_uniq"><path fill="#fff" d="M0 0h121v48H0Z"/></clipPath></defs>
+<g transform="rotate(15 60 24)" clip-path="url(#cp_m4a1_uniq)">
+  <!-- 枪管 -->
+  <rect x="8" y="21.2" width="34" height="4.6" rx="1.2" fill="#3a3a3a"/>
+  <rect x="6" y="20.6" width="10" height="5.8" rx="1" fill="#2c2c2c"/>
+  <!-- 准星 -->
+  <rect x="14" y="17.6" width="2.2" height="3.4" fill="#4d4d4d"/>
+  <!-- 护木（带散热孔） -->
+  <rect x="38" y="17.4" width="30" height="13.2" rx="3" fill="#2e2e2e"/>
+  <rect x="42" y="19.6" width="22" height="2.2" rx="1" fill="#181818"/>
+  <rect x="42" y="24.6" width="22" height="2.2" rx="1" fill="#181818"/>
+  <!-- 机匣 -->
+  <rect x="64" y="14.6" width="34" height="17.6" rx="2.5" fill="#202020"/>
+  <!-- 提把 -->
+  <rect x="70" y="7.6" width="20" height="8.6" rx="2" fill="#262626"/>
+  <rect x="76" y="9.4" width="8" height="6" rx="1" fill="#101010"/>
+  <!-- 照门 -->
+  <rect x="66" y="12.6" width="2.4" height="4" fill="#4d4d4d"/>
+  <!-- 拉机柄 -->
+  <rect x="92" y="11.6" width="5" height="3" rx="1" fill="#3a3a3a"/>
+  <!-- 弹匣（STANAG 弧形简化） -->
+  <path d="M76 30.6 l3 13 q2 5 7 5 h4 q3 0 1 -6 l-3 -12 z" fill="#262626"/>
+  <path d="M79 34.6 l2.5 9" stroke="#101010" stroke-width="1.4"/>
+  <!-- 握把 -->
+  <path d="M94 31.4 l1.5 9 q0.5 4 -3.5 4 h-3 q-3 0 -1.5 -5 l2 -8 z" fill="#2e2e2e"/>
+  <!-- 枪托 -->
+  <path d="M98 15.6 h14 v13 h-14 z" fill="#1c1c1c"/>
+  <path d="M98 18.6 h14 v3" stroke="#101010" stroke-width="1.4"/>
+  <!-- 扳机护圈 -->
+  <path d="M93 33.4 q5 5 8 0" stroke="#3f3f3f" stroke-width="1.6" fill="none"/>
+</g></svg>

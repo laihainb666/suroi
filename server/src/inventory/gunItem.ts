@@ -102,6 +102,15 @@ export class GunItem extends InventoryItemBase.derive(DefinitionType.Gun) {
             if (!owner.inventory.items.hasItem(definition.ammoType)) {
                 owner.animation = AnimationType.GunClick;
                 owner.setPartialDirty();
+
+                // 二创：无弹且背包无对应弹药时，自动切到近战（拳头/近战武器），没有近战则切投掷物
+                const inventory = owner.inventory;
+                const meleeSlot = (inventory.slotsByDefType[DefinitionType.Melee] ?? [])[0];
+                const throwableSlot = (inventory.slotsByDefType[DefinitionType.Throwable] ?? [])[0];
+                const targetSlot = meleeSlot !== undefined ? meleeSlot : throwableSlot;
+                if (targetSlot !== undefined) {
+                    inventory.setActiveWeaponIndex(targetSlot);
+                }
             }
 
             this._consecutiveShots = 0;
@@ -378,7 +387,7 @@ export class GunItem extends InventoryItemBase.derive(DefinitionType.Gun) {
         owner.recoil.time = owner.game.now + definition.recoilDuration;
         owner.recoil.multiplier = definition.recoilMultiplier;
 
-        if (!definition.infiniteAmmo) {
+        if (!definition.infiniteAmmo && !this.owner.infiniteAmmo) {
             --this.ammo;
         }
 

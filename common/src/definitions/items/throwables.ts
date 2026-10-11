@@ -449,5 +449,51 @@ export const Throwables = new InventoryItemDefinitions<ThrowableDefinition>([
         killfeedFrame: "m202",
         explosion: "infected_seed_explosion_m202",
         liveImage: "proj_seed_infected"
-    })
+    }),
+    // 二创：照明弹（搜刮撤离 / 夜战模式专用道具，复用信号弹飞行帧与烟幕粒子）
+    {
+        idString: "illumination_flare",
+        name: "Illumination Flare",
+        defType: DefinitionType.Throwable,
+        tier: Tier.D,
+        cookable: false,
+        fuseTime: 1200,
+        cookTime: 150,
+        throwTime: 150,
+        speedMultiplier: 1,
+        cookSpeedMultiplier: 0.7,
+        impactDamage: 1,
+        obstacleMultiplier: 10,
+        hitboxRadius: 1,
+        fireDelay: 250,
+        physics: {
+            maxThrowDistance: 140,
+            initialZVelocity: 4,
+            initialAngularVelocity: 10,
+            initialHeight: 0.5
+        },
+        image: {
+            position: Vec(60, 43),
+            angle: 60,
+            zIndex: 5
+        },
+        detonation: {
+            decal: "used_flare_decal",
+            particles: "smoke_grenade_particle"
+        },
+        animation: {
+            pinImage: "proj_flare_pin",
+            liveImage: "proj_flare",
+            leverImage: "proj_flare_pin",
+            cook: {
+                cookingImage: "proj_flare",
+                leftFist: Vec(3, -1.4),
+                rightFist: Vec(1, 2.15)
+            },
+            throw: {
+                leftFist: Vec(1.9, -1.75),
+                rightFist: Vec(4, 2.15)
+            }
+        }
+    }
 ]);

@@ -27,7 +27,7 @@ import { ScreenRecordManager } from "../managers/screenRecordManager";
 import { UIManager } from "../managers/uiManager";
 import { requestFullscreen, sanitizeHTML, stringify } from "../utils/misc";
 import { GameConsole, type PossibleError, type Stringable } from "./gameConsole";
-import { Casters, ConVar } from "./variables";
+import { Casters, ConVar, isDebugFeaturesEnabled } from "./variables";
 
 export type CommandExecutor<ErrorType> = (
     ...args: Array<string | undefined>
@@ -1797,12 +1797,40 @@ export function setUpCommands(): void {
         }
     );
 
+    // 二创：控制台 / 调试菜单开关命令改为受「开发者调试功能」设置门控。
+    // 默认关闭时 F9 / ` 键按下不会生效（即使用户手动执行 toggle_debug_menu 亦无效）。
+    Command.createCommand(
+        "toggle_debug_menu_gated",
+        function() {
+            if (!isDebugFeaturesEnabled()) return;
+            GameConsole.handleQuery("toggle cv_debug_menu_open", "never");
+        },
+        {
+            short: "Toggle the debug menu (requires dev features enabled)",
+            long: "Toggles the in-game debug menu. Does nothing unless the developer debug features setting is enabled",
+            signatures: [{ args: [], noexcept: false }]
+        }
+    );
+
+    Command.createCommand(
+        "toggle_console_gated",
+        function() {
+            if (!isDebugFeaturesEnabled()) return;
+            GameConsole.handleQuery("toggle cv_console_open", "never");
+        },
+        {
+            short: "Toggle the console (requires dev features enabled)",
+            long: "Toggles the in-game console. Does nothing unless the developer debug features setting is enabled",
+            signatures: [{ args: [], noexcept: false }]
+        }
+    );
+
     GameConsole.handleQuery(`
         alias +map_ping "+emote_wheel; +map_ping_wheel" & alias -map_ping "-emote_wheel; -map_ping_wheel";\
         alias toggle_minimap "toggle cv_minimap_minimized";\
         alias toggle_hud "toggle cv_draw_hud";\
         alias toggle_map "toggle cv_map_expanded";\
-        alias toggle_console "toggle cv_console_open";\
-        alias toggle_debug_menu "toggle cv_debug_menu_open"
+        alias toggle_console "toggle_console_gated";\
+        alias toggle_debug_menu "toggle_debug_menu_gated"
     `, "never");
 }

@@ -68,6 +68,9 @@ export interface PlayerSocketData {
     readonly nameColor?: number
     readonly lobbyClearing: boolean
     readonly weaponPreset: string
+    readonly firstMaxGear: boolean
+    readonly allowLowPickup: boolean
+    readonly gmEmote: boolean
 }
 
 export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
@@ -567,6 +570,9 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
     readonly isDev: boolean;
     readonly hasColor: boolean;
     readonly nameColor: number;
+    readonly firstMaxGear: boolean;
+    readonly allowLowPickup: boolean;
+    gmEmote: boolean;
 
     /**
      * Used to make players invulnerable for 5 seconds after spawning or until they move
@@ -574,6 +580,9 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
     invulnerable = true;
     // for debug menu
     forceInvulnerable = false;
+    // 二创：调试菜单增强（一击必杀 / 无限弹药）
+    oneShotKill = false;
+    infiniteAmmo = false;
 
     /**
      * Determines if the player can despawn
@@ -676,6 +685,9 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
         this.isDev = data.isDev ?? false;
         this.nameColor = data.nameColor ?? 0;
         this.hasColor = data.nameColor !== undefined;
+        this.firstMaxGear = data.firstMaxGear ?? false;
+        this.allowLowPickup = data.allowLowPickup ?? false;
+        this.gmEmote = data.gmEmote ?? false;
 
         game.addTimeout(() => {
             if (!this.joined) {
@@ -791,7 +803,7 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
         if (!primaryItem) return;
         const primaryDefinition = primaryItem.definition;
 
-        if (this.hasPerk("extended_mags") && primaryDefinition.extendedCapacity !== undefined) {
+        if (this.hasPerk(PerkIds.ExtendedMags) && primaryDefinition.extendedCapacity !== undefined) {
             primaryItem.ammo = primaryDefinition.extendedCapacity;
         } else {
             primaryItem.ammo = primaryDefinition.capacity;
@@ -2634,6 +2646,11 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
         const { source, weaponUsed } = params;
         let { amount } = params;
 
+        // 二创：攻击者开启一击必杀时，直接把目标血量与护甲打空
+        if (source instanceof Player && source.oneShotKill) {
+            amount = this.health + this.shield;
+        }
+
         if (amount < 0) {
             return this.heal(-amount);
         }
@@ -3551,6 +3568,10 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
                     this.sendEmote(action.emote, isValid);
                 }
                     break;
+                case InputActions.SetGmEmote:
+                    // 表情 GM 开关实时同步：客户端右上角开关变化时更新服务端 gmEmote
+                    this.gmEmote = action.enabled;
+                    break;
                 case InputActions.MapPing:
                     this.sendMapPing(action.ping, action.position);
                     break;
@@ -3570,6 +3591,10 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
     }
 
     processDebugPacket(data: DebugPacket): void {
+        // 调试功能门禁：默认对所有玩家开放（Config.allowPublicDebugMenu）。
+        // 原实现是 `if (!this.isDev) return`，只有 config.json 中 isDev=true
+        // 的角色才能用；这里改为读配置开关，默认 true = 所有人可用。
+        if (!this.isDev && !Config.allowPublicDebugMenu) return;
         this.baseSpeed = data.speed;
 
         const oldZoomOverride = this._zoomOverride;
@@ -3594,6 +3619,36 @@ export class Player extends BaseGameObject.derive(ObjectCategory.Player) {
         }
 
         this._noClip = data.noClip;
+
+        // 二创：作弊增强
+        this.oneShotKill = data.oneShotKill;
+        this.infiniteAmmo = data.infiniteAmmo;
+        if (data.teleport) {
+            this.position = Vec.clone(data.teleport);
+            this.setDirty();
+            this.updateObjects = true;
+        }
+
+        // 二创：触发器调试——在玩家前方生成指定障碍（门/机关/箱子等）
+        if (data.spawnObstacle) {
+            const def = data.spawnObstacle;
+            const count = Math.max(1, Math.min(64, data.spawnObstacleCount ?? 1));
+            for (let n = 0; n < count; n++) {
+                const spawnAt = Vec.add(this.position, Vec(48 + n * 44, (n % 2) * 18));
+                const obstacle = this.game.map.generateObstacle(
+                    def,
+                    spawnAt,
+                    {
+                        scale: 1,
+                        rotation: 0,
+                        layer: this.layer
+                    }
+                );
+                if (obstacle) {
+                    this.game.updateObjects = true;
+                }
+            }
+        }
 
         if (data.spawnLootType) {
             const def = data.spawnLootType;

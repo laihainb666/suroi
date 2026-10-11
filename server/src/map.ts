@@ -22,6 +22,11 @@ import { CARDINAL_DIRECTIONS, getRandomIDString } from "./utils/misc";
 
 export interface MapOptions {
     scale?: number
+    /**
+     * 兼容别名：配置里历史写法（config.example.json 的 mapScaleRanges[].mapScale）
+     * 与规范字段 scale 等价，两者任一生效。
+     */
+    mapScale?: number
     maxMajorBuildings?: number
     gameSpawnWindow?: number
 }
@@ -95,7 +100,7 @@ export class GameMap {
         const [name, ...params] = mapData.split(":") as [MapName, ...string[]];
         const mapDef: MapDefinition = Maps[name];
 
-        const { scale = 1, maxMajorBuildings } = options;
+        const { scale = options.mapScale ?? 1, maxMajorBuildings } = options;
         this.mapScale = scale === 1
             ? (num: number): number => num
             : (num: number): number => {

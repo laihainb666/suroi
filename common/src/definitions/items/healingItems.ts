@@ -74,5 +74,14 @@ export const HealingItems = new ObjectDefinitions<HealingItemDefinition>([
             ]
         },
         hideUnlessPresent: true
+    },
+    // 二创：肾上腺素注射器（搜刮撤离模式专用道具，瞬间拉满肾上腺素）
+    {
+        idString: "adrenaline_syringe",
+        name: "Adrenaline Syringe",
+        defType: DefinitionType.HealingItem,
+        healType: HealType.Adrenaline,
+        restoreAmount: 100,
+        useTime: 2
     }
 ]);

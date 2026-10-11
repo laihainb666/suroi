@@ -19,7 +19,7 @@ import $ from "jquery";
 import { Color, ColorMatrixFilter, isWebGLSupported, isWebGPUSupported } from "pixi.js";
 import { Config, type Region, type ServerInfo } from "./config";
 import { GameConsole } from "./console/gameConsole";
-import { defaultClientCVars, type CVarTypeMapping } from "./console/variables";
+import { defaultClientCVars, isDebugFeaturesEnabled, isFirstMaxGearEnabled, isAllMapsEnabled, isSpecialZonesEnabled, isLowPickupEnabled, getMenuBackgroundKey, setMenuBackgroundKey, isAdvancedParticlesEnabled, setAdvancedParticlesEnabled, isHighQualityEnabled, setHighQualityEnabled, setDebugFeaturesEnabled, setFirstMaxGearEnabled, setAllMapsEnabled, setSpecialZonesEnabled, setLowPickupEnabled, isCameraShakeEnabled, setCameraShakeEnabled, isAutoPickupEnabled, setAutoPickupEnabled, isKillfeedEnabled, setKillfeedEnabled, isEmoteGMEnabled, setEmoteGMEnabled, type CVarTypeMapping } from "./console/variables";
 import { Game } from "./game";
 import { EmoteWheelManager, MapPingWheelManager } from "./managers/emoteWheelManager";
 import { InputManager } from "./managers/inputManager";
@@ -295,8 +295,10 @@ export async function finalizeUI(): Promise<void> {
 
     const _modeName = Modes[modeName].similarTo ?? modeName;
 
-    // Change the menu based on the mode.
-    $("#splash-ui").css("background-image", `url(./img/backgrounds/menu/${modeName}.png)`);
+    // 主页面背景使用 webp 版本，体积约为 png 的 1/4，显著加快首屏加载
+    // 二创：主界面背景可选（默认 halloween），normal 玩法用用户选择的背景，其他模式仍用自身主题背景
+    const menuBackground = modeName === "normal" ? getMenuBackgroundKey() : modeName;
+    $("#splash-ui").css("background-image", `url(./img/backgrounds/menu/${menuBackground}.webp)`);
 
     if (specialLogo) {
         $("#splash-logo").children("img").attr("src", `./img/logos/suroi_beta_${_modeName}.svg`);
@@ -479,6 +481,11 @@ export async function setUpUI(): Promise<void> {
         "With your powers combined... OMEGA FLOWERY!",
         "Hahahahaflowershahahaha!",
         // End Deltarune Chapter 5 Flowery voice clips
+
+        // Fan-made mod notices
+        "这是玩家二创版本（Fan-made Mod）！",
+        "二创作品，请支持原版 Suroi！",
+        "更新公告已上线，快来看看吧！",
     ];
     const updateMarquee = () => marqueeContent.html(pickRandomInArray(marqueeTexts));
     updateMarquee();
@@ -530,23 +537,30 @@ export async function setUpUI(): Promise<void> {
 
     ui.lockedInfo.on("click", () => ui.lockedTooltip.fadeToggle(250));
 
-    const joinGame = async(): Promise<void> => {
+    // 二创：房间号快捷加入 —— 非 null 时强制请求进入指定房间
+    let forcedRoomID: number | null = null;
+
+    const joinGame = async(): Promise<boolean> => {
         if (
             Game.gameStarted
             || Game.connecting
             || selectedRegion === undefined // shouldn't happen
-        ) return;
+        ) return false;
 
         Game.connecting = true;
         ui.splashOptions.addClass("loading");
         ui.loaderText.text(translate("loading_finding_game"));
         // ui.cancelFindingGame.css("display", "");
 
-        type GetGameResponse = { success: true, gameID: number, mode: ModeName } | { success: false };
+        type GetGameResponse = { success: true, gameID: number, mode: ModeName } | { success: false, error?: string };
         let response: GetGameResponse | undefined;
         try {
+            // 二创：带 room 参数时走「房间号直连」，否则沿用 teamID / 自动匹配
+            const gameQuery = forcedRoomID !== null
+                ? `?room=${forcedRoomID}`
+                : (teamID ? `?teamID=${teamID}` : "");
             const [res] = await Promise.all([
-                fetch(`${selectedRegion.mainAddress}/api/getGame${teamID ? `?teamID=${teamID}` : ""}`),
+                fetch(`${selectedRegion.mainAddress}/api/getGame${gameQuery}`),
                 spritesheetLoadPromise()
             ]);
             if (res.ok) response = await res.json() as GetGameResponse;
@@ -556,16 +570,16 @@ export async function setUpUI(): Promise<void> {
 
         if (!response?.success) {
             Game.connecting = false;
-            ui.splashMsgText.html(translate("msg_err_finding"));
+            ui.splashMsgText.html(response?.error ?? translate("msg_err_finding"));
             ui.splashMsg.show();
             resetPlayButtons();
-            return;
+            return false;
         }
 
         if (response?.mode !== Game.modeName) {
             alert(`Mode mismatch: expected ${Game.modeName}, but server is on ${response.mode}`);
             location.reload();
-            return;
+            return false;
         }
 
         const params = new URLSearchParams();
@@ -573,19 +587,19 @@ export async function setUpUI(): Promise<void> {
         if (teamID) params.set("teamID", teamID);
         if (autoFill) params.set("autoFill", String(autoFill));
 
-        const devPass = GameConsole.getBuiltInCVar("dv_password");
+        const devPass = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_password") : "";
         if (devPass) params.set("password", devPass);
 
-        const role = GameConsole.getBuiltInCVar("dv_role");
+        const role = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_role") : "";
         if (role) params.set("role", role);
 
-        const lobbyClearing = GameConsole.getBuiltInCVar("dv_lobby_clearing");
+        const lobbyClearing = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_lobby_clearing") : false;
         if (lobbyClearing) params.set("lobbyClearing", "true");
 
-        const weaponPreset = GameConsole.getBuiltInCVar("dv_weapon_preset");
+        const weaponPreset = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_weapon_preset") : "";
         if (weaponPreset) params.set("weaponPreset", weaponPreset);
 
-        const nameColor = GameConsole.getBuiltInCVar("dv_name_color");
+        const nameColor = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_name_color") : "";
         if (nameColor) {
             try {
                 params.set("nameColor", new Color(nameColor).toNumber().toString());
@@ -595,12 +609,68 @@ export async function setUpUI(): Promise<void> {
             }
         }
 
+        // 二创：「首个进入对局玩家满级装备」开关（服务端 juggernautPlugin 据此判定）
+        if (isFirstMaxGearEnabled()) params.set("firstMaxGear", "true");
+
+        // 二创：「表情触发 GM 工具（点击表情加速等）」开关（服务端 gmToolsPlugin 据此放行）
+        if (isEmoteGMEnabled()) params.set("gmEmote", "true");
+
+        // 二创：「可拾取低级装备」开关（服务端 loot 交互据此放行低级护甲/头盔/背包）
+        if (isLowPickupEnabled()) params.set("allowLowPickup", "true");
+
         Game.connect(`${selectedRegion.gameAddress.replace("<gameID>", (response.gameID + selectedRegion.offset).toString())}/play?${params.toString()}`);
         ui.splashMsg.hide();
 
         // Check again because there is a small chance that the create-team-menu element won't hide.
         if (createTeamMenu.css("display") !== "none") createTeamMenu.hide(); // what the if condition doin
+
+        return true;
     };
+
+    // === 二创：房间号快捷加入（左上角面板） ===
+    const refreshRooms = async(): Promise<void> => {
+        if (Game.gameStarted || selectedRegion === undefined) return;
+        const region = selectedRegion;
+        try {
+            const res = await fetch(`${region.mainAddress}/api/rooms`, { signal: AbortSignal.timeout(4000) });
+            const data = await res.json() as {
+                success: boolean
+                rooms?: { id: number, aliveCount: number, allowJoin: boolean, over: boolean }[]
+            };
+            if (!data.success || data.rooms === undefined) return;
+            $("#quick-join-rooms").text(
+                data.rooms
+                    .map(r => `房间${r.id} ${r.aliveCount}人${r.allowJoin ? "" : "·满"}`)
+                    .join(" | ")
+            );
+        } catch {
+            // 后台不可用时保持上一次显示，不打扰玩家
+        }
+    };
+
+    const quickJoin = async(): Promise<void> => {
+        if (Game.gameStarted || Game.connecting) return;
+        const msg = $("#quick-join-msg");
+        const raw = String($<HTMLInputElement>("#quick-join-input").val() ?? "").trim();
+        if (!/^\d{1,3}$/.test(raw)) {
+            msg.text("房间号只能是数字").css("color", "#ff9b9b");
+            return;
+        }
+        forcedRoomID = Number(raw);
+        msg.text(`正在进入房间 ${raw} …`).css("color", "#ffd479");
+        const ok = await joinGame();
+        forcedRoomID = null;
+        if (ok) msg.text(`房间 ${raw} 连接中…`).css("color", "#8ef0a8");
+        else msg.text(`房间 ${raw} 加入失败`).css("color", "#ff9b9b");
+    };
+
+    $("#btn-quick-join").on("click", () => { void quickJoin(); });
+    $("#quick-join-input").on("keydown", e => {
+        if (e.key === "Enter") void quickJoin();
+    });
+    $("#quick-join-title").on("click", () => { $("#quick-join").toggleClass("collapsed"); });
+    void refreshRooms();
+    setInterval(() => { void refreshRooms(); }, 5000);
 
     let lastPlayButtonClickTime = 0;
 
@@ -610,6 +680,291 @@ export async function setUpUI(): Promise<void> {
         if (now - lastPlayButtonClickTime < 1500) return; // Play button rate limit
         lastPlayButtonClickTime = now;
         void joinGame();
+    });
+
+    // === Local singleplayer mode (custom) ===
+    const localPlayMenu = $("#local-play-menu");
+    const localTip = $("#local-switch-tip");
+    const localMapLabel: Record<string, string> = {
+        training: "训练测试地图",
+        normal: "标准大逃杀地图",
+        debug: "开发者调试图"
+    };
+
+    // 二创：前端托管在外部域名（GitHub Pages）时，admin 接口要走后端主机
+    const backendBase = (): string => selectedRegion?.mainAddress ?? "";
+
+    const updateLocalMapStatus = async (): Promise<string> => {
+        let current = "未知";
+        try {
+            const res = await fetch(`${backendBase()}/api/admin/map`, { signal: AbortSignal.timeout(4000) });
+            const data = await res.json() as { map?: string };
+            if (data.map) current = localMapLabel[data.map] ?? data.map;
+        } catch {
+            // Admin channel unavailable; leave label unknown.
+        }
+        $("#local-current-map").text(`服务器当前地图：${current}`);
+        return current;
+    };
+
+    const localJoin = (): void => {
+        localPlayMenu.hide();
+        void joinGame();
+    };
+
+    const localSwitchAndJoin = async (target: string): Promise<void> => {
+        const now = Date.now();
+        if (now - lastPlayButtonClickTime < 1500) return; // Rate limit
+        lastPlayButtonClickTime = now;
+        const current = await updateLocalMapStatus();
+        if (current !== (localMapLabel[target] ?? target)) {
+            localTip.text("正在切换服务器地图，请稍候…");
+            try {
+                const res = await fetch(`${backendBase()}/api/admin/switchmap`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ map: target, token: "su031dev" })
+                });
+                const data = await res.json() as { ok?: boolean; error?: string; mode?: ModeName };
+                if (!data.ok) throw new Error(data.error ?? "switch failed");
+                // 二创：切图成功后同步客户端模式，否则 joinGame 的 mode 校验会
+                // 因客户端 modeName 还是旧值而弹出 "Mode mismatch" 并刷新，表现为进不去。
+                if (data.mode) Game.modeName = data.mode;
+                localTip.text("地图切换成功，正在启动对局…");
+                // 二创：进入调试图自动开启开发者调试功能（万能调试器可用）
+                if (target === "debug") {
+                    setDebugFeaturesEnabled(true);
+                    localTip.text("已自动开启开发者调试功能（调试器可用），正在启动对局…");
+                }
+                await new Promise(resolve => setTimeout(resolve, 2500));
+            } catch (e) {
+                console.warn("switchmap failed:", e);
+                localTip.text("自动切图失败（管理通道未就绪），将进入当前运行的地图。\n若需切换其它地图，可让管理员在服务器端重启切换。");
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        }
+        localJoin();
+    };
+
+    $("#btn-local-mode").on("click", () => {
+        localTip.text("");
+        localPlayMenu.show();
+        void updateLocalMapStatus();
+        renderLocalMapGrid();
+    });
+    $("#close-local-play").on("click", () => localPlayMenu.hide());
+    $("#btn-local-training").on("click", () => { void localSwitchAndJoin("training"); });
+    $("#btn-local-normal").on("click", () => { void localSwitchAndJoin("normal"); });
+    $("#btn-local-debug").on("click", () => { void localSwitchAndJoin("debug"); });
+
+    // === 二创：全部地图 / 特殊地界动态选图（右上角快捷开关控制） ===
+    const ALL_MAP_LABELS: Record<string, string> = {
+        normal: "标准大逃杀",
+        fall: "秋季",
+        halloween: "万圣节南瓜",
+        infection: "感染",
+        hunted: "狩猎",
+        winter: "冬季",
+        nye: "跨年",
+        debug: "开发者调试图",
+        arena: "竞技场",
+        training: "训练测试图",
+        layoutFixes: "布局修复测试",
+        singleBuilding: "单建筑测试",
+        singleObstacle: "单障碍测试",
+        singleGun: "单武器测试",
+        obstaclesTest: "障碍测试",
+        playersTest: "玩家测试",
+        lootTest: "战利品测试",
+        bunkerSpawnTest: "地堡刷新测试",
+        river: "河流测试",
+        armory: "军械库测试",
+        new_port: "新港口",
+        gallery: "画廊",
+        melee_madness: "近战狂欢",
+        metro: "地铁逃生",
+        night_city: "夜城",
+        storm_plains: "风暴平原",
+        dawn_ridges: "黎明山脊"
+    };
+    const REGULAR_MAP_KEYS = ["normal", "fall", "halloween", "infection", "hunted", "winter", "nye", "metro", "night_city", "storm_plains", "dawn_ridges"];
+    const SPECIAL_MAP_KEYS = ["debug", "arena", "training", "layoutFixes", "singleBuilding", "singleObstacle", "singleGun", "obstaclesTest", "playersTest", "lootTest", "bunkerSpawnTest", "river", "armory", "new_port", "gallery", "melee_madness"];
+
+    const mapGrid = $("#local-map-grid");
+    const localMapButtons = $("#btn-local-training").parent();
+
+    const renderLocalMapGrid = (): void => {
+        const allOn = isAllMapsEnabled();
+        const specialOn = isSpecialZonesEnabled();
+        if (!allOn && !specialOn) {
+            mapGrid.hide().empty();
+            localMapButtons.show();
+            return;
+        }
+        mapGrid.empty().css("display", "flex");
+        localMapButtons.hide();
+        const appendSection = (title: string, keys: string[]): void => {
+            if (keys.length === 0) return;
+            mapGrid.append($(`<div style="margin-top:6px;font-size:12px;opacity:.8">${title}</div>`));
+            for (const key of keys) {
+                const label = ALL_MAP_LABELS[key] ?? key;
+                mapGrid.append($(`<button class="btn btn-lg btn-darken btn-primary" data-map="${key}" style="text-align:left;justify-content:flex-start;height:auto">
+                    <span style="display:flex;flex-direction:column;align-items:flex-start">
+                        <span style="font-size:15px">${label}</span>
+                        <span style="opacity:.75;font-size:12px;font-weight:normal">${key}</span>
+                    </span>
+                </button>`));
+            }
+        };
+        if (allOn) appendSection("常规 / 活动地图", REGULAR_MAP_KEYS);
+        if (allOn || specialOn) appendSection(specialOn && !allOn ? "特殊地界" : "特殊地界（调试 / 测试）", SPECIAL_MAP_KEYS);
+        mapGrid.find("button[data-map]").on("click", function() {
+            const target = $(this).attr("data-map");
+            if (target) void localSwitchAndJoin(target);
+        });
+    };
+    renderLocalMapGrid();
+
+    // === 二创：右上角快捷开关 ===
+    const syncQuickToggles = (): void => {
+        $<HTMLInputElement>("#toggle-all-maps").prop("checked", isAllMapsEnabled());
+        $<HTMLInputElement>("#toggle-special-zones").prop("checked", isSpecialZonesEnabled());
+        $<HTMLInputElement>("#toggle-debug-features-rb").prop("checked", isDebugFeaturesEnabled());
+        $<HTMLInputElement>("#toggle-first-maxgear-rb").prop("checked", isFirstMaxGearEnabled());
+        $<HTMLInputElement>("#toggle-lowpickup").prop("checked", isLowPickupEnabled());
+        $<HTMLInputElement>("#toggle-advanced-particles").prop("checked", isAdvancedParticlesEnabled());
+        $<HTMLInputElement>("#toggle-high-quality").prop("checked", isHighQualityEnabled());
+        $<HTMLSelectElement>("#menu-background-select").val(getMenuBackgroundKey());
+        $<HTMLInputElement>("#toggle-camera-shake").prop("checked", isCameraShakeEnabled());
+        $<HTMLInputElement>("#toggle-auto-pickup").prop("checked", isAutoPickupEnabled());
+        $<HTMLInputElement>("#toggle-killfeed").prop("checked", isKillfeedEnabled());
+        $<HTMLInputElement>("#toggle-emote-gm").prop("checked", isEmoteGMEnabled());
+    };
+    syncQuickToggles();
+    $("#toggle-all-maps").on("change", function() {
+        setAllMapsEnabled($(this).prop("checked"));
+        renderLocalMapGrid();
+    });
+    $("#toggle-special-zones").on("change", function() {
+        setSpecialZonesEnabled($(this).prop("checked"));
+        renderLocalMapGrid();
+    });
+    $("#toggle-debug-features-rb").on("change", function() {
+        setDebugFeaturesEnabled($(this).prop("checked"));
+        location.reload();
+    });
+    $("#toggle-first-maxgear-rb").on("change", function() {
+        setFirstMaxGearEnabled($(this).prop("checked"));
+    });
+    $("#toggle-lowpickup").on("change", function() {
+        setLowPickupEnabled($(this).prop("checked"));
+    });
+    $("#toggle-advanced-particles").on("change", function() {
+        setAdvancedParticlesEnabled($(this).prop("checked"));
+    });
+    $("#toggle-high-quality").on("change", function() {
+        setHighQualityEnabled($(this).prop("checked"));
+        location.reload();
+    });
+    $("#menu-background-select").on("change", function() {
+        const key = String($(this).val());
+        setMenuBackgroundKey(key);
+        $("#splash-ui").css("background-image", `url(./img/backgrounds/menu/${key}.webp)`);
+    });
+    $("#toggle-camera-shake").on("change", function() {
+        setCameraShakeEnabled($(this).prop("checked"));
+    });
+    $("#toggle-auto-pickup").on("change", function() {
+        setAutoPickupEnabled($(this).prop("checked"));
+    });
+    $("#toggle-killfeed").on("change", function() {
+        setKillfeedEnabled($(this).prop("checked"));
+    });
+    $("#toggle-emote-gm").on("change", function() {
+        const enabled = $(this).prop("checked");
+        setEmoteGMEnabled(enabled);
+        // 实时同步服务端 gmEmote 状态，中途开关立即生效
+        InputManager.addAction({
+            type: InputActions.SetGmEmote,
+            enabled
+        });
+    });
+    // 打开设置 / 配装面板时再同步一次，设置页里改的状态会反映到右上角
+    $("#btn-settings, #btn-customize").on("click", syncQuickToggles);
+
+    // === Hidden developer unlock (custom) ===
+    // Tap the settings title 5 times to open the passcode dialog.
+    const devUnlockMenu = $("#dev-unlock-modal");
+    const devUnlockInput = $<HTMLInputElement>("#dev-unlock-input");
+    const devUnlockError = $("#dev-unlock-error");
+    const DEV_PASSCODE = "opd2101";
+    const DEV_ROLE = "香蕉LAN";
+    const DEV_ROLE_PASSWORD = "LAN666";
+
+    let settingsTitleTapCount = 0;
+    let settingsTitleTapTimer: number | undefined;
+
+    $("#settings-menu .dialog-header h3").on("click", function() {
+        // 二创：开发者调试功能关闭时隐藏解锁入口（连点标题不再弹口令框）
+        if (!isDebugFeaturesEnabled()) {
+            settingsTitleTapCount = 0;
+            if (settingsTitleTapTimer !== undefined) clearTimeout(settingsTitleTapTimer);
+            return;
+        }
+        settingsTitleTapCount++;
+        if (settingsTitleTapTimer !== undefined) clearTimeout(settingsTitleTapTimer);
+        settingsTitleTapTimer = window.setTimeout(() => { settingsTitleTapCount = 0; }, 1200);
+        if (settingsTitleTapCount >= 5) {
+            settingsTitleTapCount = 0;
+            devUnlockError.hide().css("color", "#ff6b6b").text("口令错误，请重试");
+            devUnlockInput.val("");
+            devUnlockMenu.show();
+            devUnlockInput.trigger("focus");
+        }
+    });
+
+    $("#close-dev-unlock").on("click", () => devUnlockMenu.hide());
+
+    const submitDevUnlock = async (): Promise<void> => {
+        // 二创：开发者调试功能关闭时，即使残留旧口令也直接拦截
+        if (!isDebugFeaturesEnabled()) {
+            devUnlockMenu.hide();
+            return;
+        }
+        const code = String(devUnlockInput.val() ?? "").trim();
+        if (code !== DEV_PASSCODE) {
+            devUnlockError.show();
+            return;
+        }
+        devUnlockMenu.hide();
+        GameConsole.setBuiltInCVar("dv_role", DEV_ROLE);
+        GameConsole.setBuiltInCVar("dv_password", DEV_ROLE_PASSWORD);
+        try { localStorage.setItem("suroi_dv_role", DEV_ROLE); } catch { /* ignore */ }
+        try { localStorage.setItem("suroi_dv_password", DEV_ROLE_PASSWORD); } catch { /* ignore */ }
+        try {
+            if (!Game.debugMenu) {
+                const { DebugMenu } = await import("./utils/debugMenu");
+                Game.debugMenu = new DebugMenu();
+                Game.debugMenu.init();
+            }
+        } catch (e) {
+            console.warn("DebugMenu unavailable:", e);
+        }
+        devUnlockError
+            .css("color", "#6bff8a")
+            .text("开发者模式已开启！进对局后按 ` 键输入 toggle_debug_menu 呼出菜单。")
+            .show();
+        window.setTimeout(() => {
+            devUnlockError.hide().css("color", "#ff6b6b").text("口令错误，请重试");
+        }, 2500);
+    };
+
+    $("#dev-unlock-confirm").on("click", () => { void submitDevUnlock(); });
+    devUnlockInput.on("keydown", (e: JQuery.KeyDownEvent<HTMLElement>) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            void submitDevUnlock();
+        }
     });
 
     const createTeamMenu = $("#create-team-menu");
@@ -656,13 +1011,13 @@ export async function setUpUI(): Promise<void> {
         const badge = GameConsole.getBuiltInCVar("cv_loadout_badge");
         if (badge) params.set("badge", badge);
 
-        const devPass = GameConsole.getBuiltInCVar("dv_password");
+        const devPass = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_password") : "";
         if (devPass) params.set("password", devPass);
 
-        const role = GameConsole.getBuiltInCVar("dv_role");
+        const role = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_role") : "";
         if (role) params.set("role", role);
 
-        const nameColor = GameConsole.getBuiltInCVar("dv_name_color");
+        const nameColor = isDebugFeaturesEnabled() ? GameConsole.getBuiltInCVar("dv_name_color") : "";
         if (nameColor) {
             try {
                 params.set("nameColor", new Color(nameColor).toNumber().toString());
@@ -671,6 +1026,9 @@ export async function setUpUI(): Promise<void> {
                 console.error(e);
             }
         }
+
+        // 二创：「首个进入对局玩家满级装备」开关（服务端 juggernautPlugin 据此判定）
+        if (isFirstMaxGearEnabled()) params.set("firstMaxGear", "true");
 
         teamSocket = new WebSocket(`${selectedRegion.mainAddress.replace("http", "ws")}/team?${params.toString()}`);
 
@@ -921,6 +1279,26 @@ export async function setUpUI(): Promise<void> {
         location.search = "";
     }
 
+    // Restore dev role/password from the hidden unlock flow so the role survives reloads
+    // 二创：仅当「开发者调试功能」开关开启时才恢复 dev 身份
+    if (!roleParam && isDebugFeaturesEnabled()) {
+        const savedRole = localStorage.getItem("suroi_dv_role");
+        if (savedRole) GameConsole.setBuiltInCVar("dv_role", savedRole);
+    }
+    if (!devPassword && isDebugFeaturesEnabled()) {
+        const savedPassword = localStorage.getItem("suroi_dv_password");
+        if (savedPassword) GameConsole.setBuiltInCVar("dv_password", savedPassword);
+    }
+
+    // Debug builds: no role lock — connect as the dev role automatically so
+    // the dev menu actually works for every name. 二创：同样受开关门控。
+    if (DEBUG_CLIENT && isDebugFeaturesEnabled() && !GameConsole.getBuiltInCVar("dv_role")) {
+        GameConsole.setBuiltInCVar("dv_role", "香蕉LAN");
+        GameConsole.setBuiltInCVar("dv_password", "LAN666");
+        try { localStorage.setItem("suroi_dv_role", "香蕉LAN"); } catch { /* ignore */ }
+        try { localStorage.setItem("suroi_dv_password", "LAN666"); } catch { /* ignore */ }
+    }
+
     const usernameField = $<HTMLInputElement>("#username-input");
 
     const youtubers = [
@@ -1026,9 +1404,10 @@ export async function setUpUI(): Promise<void> {
                 .replace(/[\u2013\u2014]/g, "-")
                 //         |  –  |  —  |
 
-                // Strip out non-ASCII chars and
-                // the C0/C1 control characters
-                .replace(/[^\x20-\x7E]/g, "")
+                // Allow Unicode display characters (CJK, kana, accented Latin, etc.)
+                // while stripping control/format/invisible chars, bidi controls,
+                // surrogate (emoji) code units and private-use characters.
+                .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2028-\u202E\u2060-\u2064\uFEFF\uD800-\uDFFF\uE000-\uF8FF]/g, "")
         );
     });
 
@@ -1441,7 +1820,8 @@ export async function setUpUI(): Promise<void> {
     );
 
     // Load special tab
-    if (GameConsole.getBuiltInCVar("dv_role") !== "") {
+    // 二创：开发者调试功能关闭时，即使残留 dev 身份也不显示特殊设置页
+    if (isDebugFeaturesEnabled() && GameConsole.getBuiltInCVar("dv_role") !== "") {
         $("#tab-special").show();
 
         $<HTMLInputElement>("#role-name")
@@ -1661,6 +2041,26 @@ export async function setUpUI(): Promise<void> {
         "cv_autopickup_dual_guns"
     );
     $("#toggle-autopickup-dual-guns").parent().parent().toggle(InputManager.isMobile);
+
+    // 二创：开发者调试功能开关（开启/关闭均需刷新页面以挂载/卸载调试面板）
+    {
+        const debugToggle = $<HTMLInputElement>("#toggle-debug-features");
+        debugToggle.prop("checked", isDebugFeaturesEnabled());
+        if (!isDebugFeaturesEnabled()) $("#tab-special").hide();
+        debugToggle.on("change", () => {
+            setDebugFeaturesEnabled(debugToggle.prop("checked"));
+            location.reload();
+        });
+    }
+
+    // 二创：首个进入对局玩家满级装备（巨人模式）开关
+    {
+        const maxGearToggle = $<HTMLInputElement>("#toggle-first-maxgear");
+        maxGearToggle.prop("checked", isFirstMaxGearEnabled());
+        maxGearToggle.on("change", () => {
+            setFirstMaxGearEnabled(maxGearToggle.prop("checked"));
+        });
+    }
 
     // Anonymous player names toggle
     addCheckboxListener(

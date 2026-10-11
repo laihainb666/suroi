@@ -1,6 +1,8 @@
 import { Armors, type ArmorDefinition } from "../definitions/items/armors";
 import { Loots, type LootDefinition } from "../definitions/loots";
+import { Obstacles, type ObstacleDefinition } from "../definitions/obstacles";
 import { Packet, PacketType } from "./packet";
+import { type Vector } from "../utils/vector";
 
 export interface DebugPacket {
     readonly type: PacketType.Debug
@@ -12,10 +14,19 @@ export interface DebugPacket {
     readonly noClip: boolean
     readonly invulnerable: boolean
 
+    // 二创：作弊增强
+    readonly oneShotKill: boolean
+    readonly infiniteAmmo: boolean
+    readonly teleport?: Vector
+
     readonly spawnLootType?: LootDefinition
     readonly spawnDummy: boolean
     readonly dummyVest?: ArmorDefinition
     readonly dummyHelmet?: ArmorDefinition
+
+    // 二创：触发器调试——在玩家附近生成指定障碍（门/机关/箱子等）
+    readonly spawnObstacle?: ObstacleDefinition
+    readonly spawnObstacleCount?: number
 
     readonly layerOffset: number
 }
@@ -29,7 +40,15 @@ export const DebugPacket = new Packet<DebugPacket>(PacketType.Debug, {
             data.spawnLootType !== undefined,
             data.spawnDummy,
             data.dummyVest !== undefined,
-            data.dummyHelmet !== undefined
+            data.dummyHelmet !== undefined,
+            data.oneShotKill
+        );
+        // 二创：第二组布尔（writeBooleanGroup 上限 8 位）
+        strm.writeBooleanGroup(
+            data.infiniteAmmo,
+            data.teleport !== undefined,
+            data.spawnObstacle !== undefined,
+            data.spawnObstacle !== undefined
         );
 
         strm.writeFloat32(data.speed);
@@ -51,6 +70,14 @@ export const DebugPacket = new Packet<DebugPacket>(PacketType.Debug, {
                 Armors.writeToStream(strm, data.dummyHelmet);
             }
         }
+        if (data.teleport) {
+            strm.writeFloat32(data.teleport.x);
+            strm.writeFloat32(data.teleport.y);
+        }
+        if (data.spawnObstacle) {
+            Obstacles.writeToStream(strm, data.spawnObstacle);
+            strm.writeUint8(Math.max(1, Math.min(255, data.spawnObstacleCount ?? 1)));
+        }
     },
 
     deserialize(strm, data) {
@@ -61,7 +88,14 @@ export const DebugPacket = new Packet<DebugPacket>(PacketType.Debug, {
             spawnLoot,
             spawnDummy,
             dummyHasVest,
-            dummyHasHelmet
+            dummyHasHelmet,
+            oneShotKill
+        ] = strm.readBooleanGroup();
+        const [
+            infiniteAmmo,
+            hasTeleport,
+            hasSpawnObstacle,
+            hasSpawnObstacleCount
         ] = strm.readBooleanGroup();
 
         data.speed = strm.readFloat32();
@@ -89,6 +123,19 @@ export const DebugPacket = new Packet<DebugPacket>(PacketType.Debug, {
             if (dummyHasHelmet) {
                 data.dummyHelmet = Armors.readFromStream(strm);
             }
+        }
+
+        data.oneShotKill = oneShotKill;
+        data.infiniteAmmo = infiniteAmmo;
+        if (hasTeleport) {
+            data.teleport = {
+                x: strm.readFloat32(),
+                y: strm.readFloat32()
+            };
+        }
+        if (hasSpawnObstacle) {
+            data.spawnObstacle = Obstacles.readFromStream(strm);
+            data.spawnObstacleCount = strm.readUint8();
         }
     }
 });

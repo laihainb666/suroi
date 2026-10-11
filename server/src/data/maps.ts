@@ -54,6 +54,11 @@ export interface MapDefinition {
     readonly width: number
     readonly height: number
     readonly mode?: ModeName
+    /**
+     * 二创：为 true 时该地图不再刷新/推进毒圈（不进入任何毒圈阶段，也不产生毒圈伤害）。
+     * 供调试地图（training）使用，见 gas.ts 中的判断。
+     */
+    readonly noGas?: boolean
     readonly spawn?: SpawnOptions
     readonly oceanSize: number
     readonly beachSize: number
@@ -1258,9 +1263,22 @@ const maps = {
             // Generate all obstacles
             const obstaclePos = Vec(200, 200);
 
+            // 二创：收集所有建筑谜题触发器引用的障碍（vault_door / powered_metal_door / saw 等）
+            const triggerObstacleIds = new Set<string>();
+            for (const building of Buildings.definitions) {
+                if (building.puzzle?.triggerOnSolve !== undefined) {
+                    triggerObstacleIds.add(String(building.puzzle.triggerOnSolve));
+                }
+            }
+
+            // 二创：箱子 / 触发器类障碍每类固定摆放 5 个，保证调试图样例齐全
+            const isSpecialSample = (id: string): boolean =>
+                /(crate|chest)/i.test(id) || triggerObstacleIds.has(id);
+
             for (const obstacle of Obstacles.definitions) {
                 if (obstacle.invisible) continue;
-                for (let i = 0; i < (obstacle.variations ?? 1); i++) {
+                const repeats = isSpecialSample(obstacle.idString) ? 5 : (obstacle.variations ?? 1);
+                for (let i = 0; i < repeats; i++) {
                     map.generateObstacle(obstacle.idString, obstaclePos);
 
                     obstaclePos.x += 20;
@@ -1408,6 +1426,73 @@ const maps = {
         },
         places: [
             { name: "stark is pro", position: Vec(0.5, 0.5) }
+        ]
+    },
+    // Lightweight practice/training map for solo drills and quick dev tests
+    training: {
+        width: 1152,
+        height: 1152,
+        // 二创：调试地图不刷新/不推进毒圈（配合 gas.ts 的 noGas 判断），多人联机同图可用
+        noGas: true,
+        spawn: { mode: "fixed" },
+        beachSize: 24,
+        oceanSize: 64,
+        onGenerate(map) {
+            const center = Vec(map.width / 2, map.height / 2);
+
+            // Central spawn shelter: a ring of crates + rocks
+            const ring = [
+                { id: "regular_crate", offset: Vec(0, -90) },
+                { id: "regular_crate", offset: Vec(90, 0) },
+                { id: "regular_crate", offset: Vec(0, 90) },
+                { id: "regular_crate", offset: Vec(-90, 0) },
+                { id: "rock", offset: Vec(45, -45) },
+                { id: "rock", offset: Vec(-45, -45) },
+                { id: "rock", offset: Vec(45, 45) },
+                { id: "rock", offset: Vec(-45, 45) },
+                { id: "barrel", offset: Vec(0, -135) },
+                { id: "barrel", offset: Vec(135, 0) },
+                { id: "barrel", offset: Vec(0, 135) },
+                { id: "barrel", offset: Vec(-135, 0) }
+            ];
+            for (const { id, offset } of ring) {
+                map.generateObstacle(id, Vec.add(center, offset), { rotation: 0 });
+            }
+
+            // 二创：基础档为原版地图——不铺设全物品墙（全物品仅在调试图 debug 提供）
+            // Scatter cover obstacles in the outer ring
+            const randomObstacles: MapDefinition["obstacles"] = {
+                oak_tree: 60,
+                rock: 70,
+                bush: 40,
+                barrel: 20,
+                regular_crate: 40
+            };
+
+            for (const obstacle in randomObstacles) {
+                const limit = randomObstacles[obstacle];
+                const definition = Obstacles.fromString(obstacle);
+
+                for (let i = 0; i < limit; i++) {
+                    const pos = map.getRandomPosition(
+                        definition.spawnHitbox ?? definition.hitbox,
+                        {
+                            collides: pos => Collision.circleCollision(center, 280, pos, 1)
+                        }
+                    );
+
+                    if (!pos) continue;
+
+                    map.generateObstacle(definition, pos);
+                }
+            }
+        },
+        places: [
+            { name: "Spawn", position: Vec(0.5, 0.5) },
+            { name: "Range NW", position: Vec(0.28, 0.35) },
+            { name: "Range NE", position: Vec(0.72, 0.35) },
+            { name: "Range SW", position: Vec(0.28, 0.65) },
+            { name: "Range SE", position: Vec(0.72, 0.65) }
         ]
     },
     layoutFixes: { // temporary map, delete later ass code
@@ -1891,6 +1976,176 @@ const maps = {
             { name: "Mt. Putrid", position: Vec(0.5, 0.35) },
             { name: "Decayedwood", position: Vec(0.5, 0.65) }
         ]
+    },
+    // 二创：地铁逃生（搜刮撤离）模式地图 —— 无毒圈、需进入撤离点倒计时后成功撤离
+    metro: {
+        width: 1536,
+        height: 1536,
+        mode: "extraction",
+        noGas: true,
+        oceanSize: 96,
+        beachSize: 32,
+        onGenerate(map) {
+            const center = Vec(map.width / 2, map.height / 2);
+
+            // 中央车站建筑群
+            map.generateBuilding("train_station", Vec.add(center, Vec(-260, -150)), 0);
+            map.generateBuilding("train_station_office", Vec.add(center, Vec(120, -170)), 0);
+
+            // 四组列车（车头 + 车厢）
+            const trainGroups: Array<{ pos: Vector; rot: number; cars: readonly string[] }> = [
+                { pos: Vec(140, 220), rot: 0, cars: ["train_engine", "passenger_train", "passenger_train"] },
+                { pos: Vec(300, 1250), rot: 0, cars: ["train_engine", "passenger_train", "container_train"] },
+                { pos: Vec(1120, 200), rot: 0, cars: ["train_engine", "wood_train", "container_train"] },
+                { pos: Vec(1230, 1180), rot: 0, cars: ["train_engine", "passenger_train", "wood_train"] }
+            ];
+            for (const group of trainGroups) {
+                let pos = group.pos;
+                for (const car of group.cars) {
+                    map.generateBuilding(car, pos, group.rot as Orientation);
+                    pos = Vec.add(pos, Vec(0, 185));
+                }
+            }
+
+            // 站台物资与障碍（固定伪随机，保证每次生成一致）
+            const stationProps: readonly string[] = [
+                "regular_crate", "grenade_crate", "ammo_crate", "melee_crate", "lux_crate",
+                "viking_chest", "barrel", "dumpster", "vending_machine", "fridge", "bookshelf",
+                "sandbags", "barrier", "roadblock", "potted_plant", "trash_can", "small_desk",
+                "office_chair", "toolbox", "gun_locker", "solid_crate", "reinforced_crate"
+            ];
+            let seed = 42;
+            const rnd = (): number => {
+                seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+                return seed / 0x7fffffff;
+            };
+            for (let i = 0; i < 340; i++) {
+                const x = 110 + rnd() * (map.width - 220);
+                const y = 110 + rnd() * (map.height - 220);
+                const id = stationProps[Math.floor(rnd() * stationProps.length)];
+                map.generateObstacle(id, Vec(x, y), { rotation: Math.floor(rnd() * 4) * (Math.PI / 2) });
+            }
+
+            // 轨道连接件点缀（列车轨道视觉）
+            for (let i = 0; i < 80; i++) {
+                map.generateObstacle("train_connector", Vec(110 + rnd() * (map.width - 220), 110 + rnd() * (map.height - 220)), { rotation: rnd() * Math.PI });
+            }
+        }
+    },
+    // 二创：夜战都市模式地图 —— 城市街区 + 路灯，黑夜滤镜由 night 模式提供
+    night_city: {
+        width: 1620,
+        height: 1620,
+        mode: "night",
+        oceanSize: 144,
+        beachSize: 32,
+        buildings: {
+            red_house: 4,
+            red_house_v2: 3,
+            green_house: 3,
+            warehouse: 2,
+            port_warehouse: 1,
+            construction_site: 1,
+            train_station: 1,
+            armory: 1,
+            hunting_stand: 2
+        },
+        obstacles: {
+            regular_crate: 60,
+            grenade_crate: 25,
+            ammo_crate: 15,
+            melee_crate: 10,
+            lux_crate: 5,
+            barrel: 40,
+            dumpster: 20,
+            vending_machine: 8,
+            fridge: 8,
+            bookshelf: 10,
+            small_desk: 20,
+            office_chair: 20,
+            potted_plant: 15,
+            sandbags: 30,
+            barrier: 30,
+            roadblock: 10,
+            trash_can: 20,
+            pipe: 15,
+            lamp: 30,
+            small_lamp: 30,
+            rock: 30,
+            birch_tree: 30
+        }
+    },
+    storm_plains: {
+        width: 1536,
+        height: 1536,
+        mode: "storm",
+        oceanSize: 96,
+        beachSize: 32,
+        buildings: {
+            red_house: 3,
+            red_house_v2: 2,
+            green_house: 2,
+            warehouse: 2,
+            port_warehouse: 1,
+            construction_site: 1,
+            armory: 1,
+            hunting_stand: 2,
+            barn: 2
+        },
+        obstacles: {
+            regular_crate: 50,
+            grenade_crate: 20,
+            ammo_crate: 12,
+            melee_crate: 8,
+            lux_crate: 4,
+            barrel: 30,
+            dumpster: 12,
+            sandbags: 25,
+            barrier: 20,
+            roadblock: 8,
+            trash_can: 12,
+            pipe: 10,
+            rock: 60,
+            hay_bale: 20,
+            vibrant_bush: 40,
+            dead_pine_tree: 25,
+            pumpkin: 6
+        }
+    },
+    dawn_ridges: {
+        width: 1536,
+        height: 1536,
+        mode: "dawn",
+        oceanSize: 96,
+        beachSize: 32,
+        buildings: {
+            red_house: 3,
+            red_house_v2: 2,
+            green_house: 3,
+            warehouse: 2,
+            port_warehouse: 1,
+            armory: 1,
+            hunting_stand: 4,
+            cabin: 3
+        },
+        obstacles: {
+            regular_crate: 50,
+            grenade_crate: 20,
+            ammo_crate: 12,
+            melee_crate: 8,
+            lux_crate: 4,
+            barrel: 25,
+            dumpster: 12,
+            sandbags: 20,
+            barrier: 18,
+            roadblock: 6,
+            rock: 70,
+            clearing_boulder: 30,
+            birch_tree: 40,
+            pine_tree: 30,
+            blueberry_bush: 20,
+            hay_bale: 15
+        }
     },
 } satisfies Record<string, MapDefinition>;
 

@@ -9,7 +9,7 @@ import { type MeleeDefinition } from "@common/definitions/items/melees";
 import { Skins } from "@common/definitions/items/skins";
 import { type LootDefinition, type WeaponDefinition } from "@common/definitions/loots";
 import type { ColorKeys, ModeDefinition, ModeName } from "@common/definitions/modes";
-import { Modes } from "@common/definitions/modes";
+import { ExtractionZones, Modes } from "@common/definitions/modes";
 import type { JoinedData } from "@common/packets/joinedPacket";
 import { JoinPacket } from "@common/packets/joinPacket";
 import { PacketType, type DataSplit, type PacketDataIn, type PacketDataOut } from "@common/packets/packet";
@@ -31,7 +31,7 @@ import { Application, Color, Container, loadTextures } from "pixi.js";
 import "pixi.js/prepare";
 import { setUpCommands } from "./console/commands";
 import { GameConsole } from "./console/gameConsole";
-import { defaultClientCVars } from "./console/variables";
+import { defaultClientCVars, isDebugFeaturesEnabled, isHighQualityEnabled, isAutoPickupEnabled } from "./console/variables";
 import { CameraManager } from "./managers/cameraManager";
 import { EmoteWheelManager, MapPingWheelManager } from "./managers/emoteWheelManager";
 import { GasManager, GasRender } from "./managers/gasManager";
@@ -259,8 +259,8 @@ function getGunCondensedLines(current: GunDefinition, next: GunDefinition): Cond
     ]);
 
     if (explosionCurrent || explosionNext) {
-        const dpsLine = lines.find(l => l.label === "DPS");
-        if (dpsLine) dpsLine.trend = "neutral";
+        const dpsIdx = lines.findIndex(l => l.label === "DPS");
+        if (dpsIdx >= 0) lines[dpsIdx] = { ...lines[dpsIdx], trend: "neutral" };
     }
 
     const specialCondensed = buildSpecialCondensedLine("Special", getGunSpecialTags(current), getGunSpecialTags(next));
@@ -553,6 +553,12 @@ function renderWeaponComparison(payload?: WeaponComparisonPayload): void {
 export const Game = new (class Game {
     private _socket?: WebSocket;
 
+    // Auto-reconnect on abnormal close (code 1006 / empty reason) so the
+    // player isn't kicked back to the menu with a bare "Connection lost".
+    private _lastAddress = "";
+    private _reconnectAttempts = 0;
+    private _reconnectTimer?: ReturnType<typeof setTimeout>;
+
     socketCloseCallback?: (value: unknown) => void;
 
     readonly objects = new ObjectPool<ObjectMapping>();
@@ -657,6 +663,9 @@ export const Game = new (class Game {
 
     private readonly _timeouts = new Set<Timeout>();
 
+    // 二创：撤离模式（地铁逃生）客户端撤离进度累计（ms）
+    private _extractionAccum = 0;
+
     addTimeout(callback: () => void, delay?: number): Timeout {
         const timeout = new Timeout(callback, Date.now() + (delay ?? 0));
         this._timeouts.add(timeout);
@@ -674,11 +683,83 @@ export const Game = new (class Game {
         setUpCommands();
         await initTranslation();
         InputManager.init();
-        if (DEBUG_CLIENT) {
+        await setUpUI();
+        // 二创：调试接口无条件暴露，方便「非内置菜单」的外部脚本直接调试
+        {
+            const [
+                { DebugPacket },
+                { PacketType },
+                { Loots },
+                { Obstacles },
+                { Armors, ArmorType },
+                { GameConstants },
+                { Scopes, DEFAULT_SCOPE },
+                { translate }
+            ] = await Promise.all([
+                import("@common/packets/debugPacket"),
+                import("@common/packets/packet"),
+                import("@common/definitions/loots"),
+                import("@common/definitions/obstacles"),
+                import("@common/definitions/items/armors"),
+                import("@common/constants"),
+                import("@common/definitions/items/scopes"),
+                import("./utils/translations/translations")
+            ]);
+            (window as unknown as Record<string, unknown>).SuroiDebug = {
+                Game: this,
+                GameConsole,
+                DebugPacket,
+                PacketType,
+                Loots,
+                Obstacles,
+                Armors,
+                ArmorType,
+                Scopes,
+                DEFAULT_SCOPE,
+                translate,
+                GameConstants
+            };
+        }
+
+        // Debug menu is available on DEBUG_CLIENT builds for every name (no role lock)
+        // 二创：仅当「开发者调试功能」设置开关开启时才挂载调试菜单与 DEV 按钮
+        if (DEBUG_CLIENT && isDebugFeaturesEnabled()) {
             this.debugMenu = new (await import("./utils/debugMenu")).DebugMenu();
             this.debugMenu.init();
+
+            // Touch-only floating DEV button (mobile)
+            if (InputManager.isMobile) {
+                const devBtn = $("<button/>", {
+                    id: "btn-touch-dev-menu",
+                    text: "DEV"
+                });
+                devBtn.css({
+                    position: "fixed",
+                    right: "12px",
+                    top: "96px",
+                    width: "52px",
+                    height: "52px",
+                    padding: "0",
+                    borderRadius: "50%",
+                    background: "rgba(124, 77, 255, 0.9)",
+                    color: "#fff",
+                    border: "2px solid rgba(255,255,255,0.4)",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    lineHeight: "48px",
+                    textAlign: "center",
+                    zIndex: "2000",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.45)",
+                    touchAction: "manipulation",
+                    userSelect: "none"
+                });
+                devBtn.on("click", (e: JQuery.ClickEvent) => {
+                    e.stopPropagation();
+                    this.debugMenu?.toggle();
+                });
+                $("body").append(devBtn);
+            }
         }
-        await setUpUI();
         await fetchServerData();
         this.gasRender = new GasRender(PIXI_SCALE);
         MapManager.init();
@@ -690,16 +771,18 @@ export const Game = new (class Game {
             const renderRes = GameConsole.getBuiltInCVar("cv_renderer_res");
 
             const pixi = this.pixi;
+            // 二创：高画质开关开启时强制 2x 渲染分辨率 + 抗锯齿
+            const highQuality = isHighQualityEnabled();
             await pixi.init({
                 resizeTo: window,
                 background: this.colors.background,
-                antialias: InputManager.isMobile
+                antialias: highQuality ? true : (InputManager.isMobile
                     ? GameConsole.getBuiltInCVar("mb_antialias")
-                    : GameConsole.getBuiltInCVar("cv_antialias"),
+                    : GameConsole.getBuiltInCVar("cv_antialias")),
                 autoDensity: true,
                 preferWebGLVersion: renderMode === "webgl1" ? 1 : 2,
                 preference: renderMode === "webgpu" ? "webgpu" : "webgl",
-                resolution: renderRes === "auto" ? (window.devicePixelRatio || 1) : parseFloat(renderRes),
+                resolution: highQuality ? 2 : (renderRes === "auto" ? (window.devicePixelRatio || 1) : parseFloat(renderRes)),
                 hello: true,
                 autoStart: false,
                 canvas: document.getElementById("game-canvas") as HTMLCanvasElement,
@@ -829,6 +912,7 @@ export const Game = new (class Game {
 
     connect(address: string): void {
         this.error = false;
+        this._lastAddress = address;
 
         if (this.gameStarted) return;
 
@@ -836,6 +920,7 @@ export const Game = new (class Game {
         this._socket.binaryType = "arraybuffer";
 
         this._socket.onopen = (): void => {
+            this._reconnectAttempts = 0;
             this.pixi.start();
             this.music?.stop();
             this.connecting = false;
@@ -957,6 +1042,28 @@ export const Game = new (class Game {
                 alert(reason);
                 // reload the page with a time stamp to try clearing cache
                 location.search = `t=${Date.now()}`;
+            }
+
+            // Abnormal drop (no close reason / code 1006): instead of showing a
+            // dead-end "Connection lost", try to silently rejoin the same game.
+            if (!this.gameOver && this.gameStarted && !this.error && !e.reason) {
+                if (this._reconnectAttempts < 4) {
+                    this._reconnectAttempts++;
+                    ui.splashUi.fadeIn(400);
+                    ui.splashMsgText.html(`Connection lost. Reconnecting... (${this._reconnectAttempts}/4)`);
+                    ui.splashMsg.show();
+                    this.gameStarted = false; // allow connect() to run again
+
+                    const attempt = this._reconnectAttempts;
+                    this._reconnectTimer = setTimeout(() => {
+                        if (attempt !== this._reconnectAttempts) return; // superseded by a newer cycle
+                        if (!this._socket || this._socket.readyState === WebSocket.CLOSED) {
+                            this.connect(this._lastAddress);
+                        }
+                    }, 1500 * attempt);
+                    return;
+                }
+                this._reconnectAttempts = 0;
             }
 
             if (!this.gameOver) {
@@ -1115,6 +1222,8 @@ export const Game = new (class Game {
 
             SoundManager.stopAll();
             this.gameOver = true;
+            this._reconnectAttempts = 0;
+            if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
             this._socket?.close();
 
             ui.splashUi.fadeIn(400, async() => {
@@ -1216,6 +1325,33 @@ export const Game = new (class Game {
 
         MapManager.update();
         this.gasRender.update();
+
+        // 二创：撤离模式（地铁逃生）—— 进入撤离区 HUD 提示
+        if (this.modeName === "extraction") {
+            const interactMsg = UIManager.ui.interactMsg;
+            if (interactMsg) {
+                const player = this.activePlayer;
+                const zones = ExtractionZones["metro"];
+                let inZone = false;
+                if (player && zones?.length) {
+                    for (const zone of zones) {
+                        if (Vec.len(Vec.sub(player.position, zone.position)) <= zone.radius) {
+                            inZone = true;
+                            break;
+                        }
+                    }
+                }
+                if (inZone) {
+                    this._extractionAccum += delta;
+                    const pct = Math.min(100, Math.floor(this._extractionAccum / 3000 * 100));
+                    const msg = `撤离中 ${pct}%`;
+                    if (interactMsg.text() !== msg) interactMsg.text(msg).fadeIn(100);
+                } else if (this._extractionAccum !== 0) {
+                    this._extractionAccum = 0;
+                    interactMsg.fadeOut(200);
+                }
+            }
+        }
 
         for (const plane of this.planes) plane.update();
 
@@ -1764,6 +1900,8 @@ export const Game = new (class Game {
                     // Auto pickup (top 10 conditionals)
                     if (
                         GameConsole.getBuiltInCVar("cv_autopickup")
+                        // 二创：右上角「自动拾取」开关
+                        && isAutoPickupEnabled()
                         && object?.isLoot
                         && autoPickup
                         && (

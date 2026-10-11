@@ -78,6 +78,9 @@ export interface MeleeDefinition extends InventoryItemDefinition {
             readonly pointB: Vector
         }
     }
+
+    // 二创：近战武器可选特殊标签（客户端 inspect 面板展示用）
+    readonly specialTags?: string[]
 }
 
 const hatchet = (name: string): MeleeDefinition => {

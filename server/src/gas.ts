@@ -80,6 +80,10 @@ export class Gas {
         const gas = Config.gas;
         if (gas?.disabled) return;
 
+        // 二创：调试地图禁用毒圈（不再刷新、不再推进，也不产生毒圈伤害）。
+        // noGas 为 true 时直接返回，state 保持 Inactive，后续阶段计时器也不会被排程。
+        if (this.game.map.mapDef.noGas) return;
+
         const currentStage = GasStages[this.stage + 1];
         if (currentStage === undefined) return;
 

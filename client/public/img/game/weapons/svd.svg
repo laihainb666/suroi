@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="52" fill="none"><defs><clipPath id="cp_svd_uniq"><path fill="#fff" d="M0 0h140v52H0Z"/></clipPath></defs> <g transform="rotate(15 70 26)" clip-path="url(#cp_svd_uniq)">
+   <!-- 枪口制退器（SVD 开槽消焰） -->
+   <rect x="3" y="20" width="10" height="6.6" rx="1" fill="#2e2e2e"/>
+   <rect x="5" y="21.8" width="6" height="1.1" rx="0.5" fill="#191919"/>
+   <rect x="5" y="23.9" width="6" height="1.1" rx="0.5" fill="#191919"/>
+   <!-- 枪管 -->
+   <rect x="12" y="21.2" width="30" height="4.2" rx="0.9" fill="#494949"/>
+   <!-- 准星（带护翼） -->
+   <rect x="22" y="17.6" width="3.4" height="4.6" rx="0.9" fill="#333"/>
+   <rect x="20" y="17.6" width="8" height="1.4" rx="0.7" fill="#333"/>
+   <!-- 导气管（SVD 肋条式） -->
+   <rect x="34" y="18.8" width="20" height="2.6" rx="1" fill="#4e4e4e"/>
+   <rect x="36" y="18.8" width="2" height="6" rx="1" fill="#3a3a3a"/>
+   <rect x="40" y="18.8" width="2" height="6" rx="1" fill="#3a3a3a"/>
+   <rect x="44" y="18.8" width="2" height="6" rx="1" fill="#3a3a3a"/>
+   <rect x="48" y="18.8" width="2" height="6" rx="1" fill="#3a3a3a"/>
+   <!-- 木护木 -->
+   <rect x="34" y="22.6" width="22" height="5.4" rx="1.8" fill="#8a6537"/>
+   <rect x="38" y="24.4" width="14" height="1.2" rx="0.5" fill="#6d4f28"/>
+   <!-- 弹匣（SVD 10 发弯匣） -->
+   <path d="M56 21.6 C 60 26, 62 29, 66 29 C 68.4 29, 69.6 27.6, 69.6 25.8 L 67 22.6 Z" fill="#555"/>
+   <!-- 机匣 -->
+   <rect x="68" y="17.2" width="40" height="11.6" rx="2.4" fill="#525252"/>
+   <rect x="72" y="19.4" width="10" height="1.6" rx="0.6" fill="#3a3a3a"/>
+   <!-- 觇孔照门 -->
+   <rect x="102" y="18.4" width="4.4" height="4.4" rx="1" fill="#333"/>
+   <!-- 拉机柄 -->
+   <rect x="74" y="15.2" width="9" height="2.2" rx="1" fill="#3f3f3f"/>
+   <!-- 木托（带贴腮板） -->
+   <path d="M108 17.6 L 122 17.4 L 136 22.6 L 136 29.4 L 122 28.4 L 108 26.4 Z" fill="#8a6537"/>
+   <path d="M122 17.4 L 136 22.6 L 136 29.4 L 122 28.4 Z" fill="#77562c"/>
+   <rect x="112" y="20.2" width="14" height="2.2" rx="1" fill="#6d4f28"/>
+   <!-- 扳机护圈 / 握把 -->
+   <path d="M72 28.8 L 80 28.8 L 78 34.4 L 71 34.4 Z" fill="#4a4a4a"/>
+   <rect x="68" y="29" width="8" height="5" rx="2" fill="#3a3a3a"/>
+</g></svg>

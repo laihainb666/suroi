@@ -21,6 +21,7 @@ import { Vec, type Vector } from "@common/utils/vector";
 import $ from "jquery";
 import { Color } from "pixi.js";
 import { GameConsole } from "../console/gameConsole";
+import { isKillfeedEnabled } from "../console/variables";
 import { Game } from "../game";
 import { type GameObject } from "../objects/gameObject";
 import { Player } from "../objects/player";
@@ -1285,6 +1286,9 @@ class UIManagerClass {
     private _killMessageTimeoutID?: number;
 
     private _addKillFeedMessage(text: string, classes: string[]): void {
+        // 二创：右上角「击杀提示」开关可关闭击杀信息
+        if (!isKillfeedEnabled()) return;
+
         const killFeedItem = $<HTMLDivElement>('<div class="kill-feed-item">');
 
         killFeedItem.html(text);

@@ -23,6 +23,7 @@ export type SimpleInputActions = Exclude<
     | InputActions.DropItem
     | InputActions.UseItem
     | InputActions.Emote
+    | InputActions.SetGmEmote
     | InputActions.MapPing
     | InputActions.LockSlot
     | InputActions.UnlockSlot
@@ -45,6 +46,10 @@ export type InputAction =
     | {
         readonly type: InputActions.Emote
         readonly emote: EmoteDefinition
+    }
+    | {
+        readonly type: InputActions.SetGmEmote
+        readonly enabled: boolean
     }
     | {
         readonly type: InputActions.MapPing

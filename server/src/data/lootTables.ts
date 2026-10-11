@@ -2,7 +2,7 @@ import { PerkIds } from "@common/definitions/items/perks";
 import { ModeName } from "@common/definitions/modes";
 import { Obstacles } from "@common/definitions/obstacles";
 import { NullString } from "@common/utils/objectDefinitions";
-import { LootTable } from "../utils/lootHelpers";
+import { LootTable, type WeightedItem } from "../utils/lootHelpers";
 
 export const LootTables: Record<ModeName, Record<string, LootTable>> = {
     normal: {
@@ -517,6 +517,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             loot: [
                 { item: "ak47", weight: 1 },
                 { item: "aug", weight: 1 },
+            { item: "famas", weight: 0.9 },
                 { item: "mp5k", weight: 1 },
                 { item: "model_37", weight: 1 },
                 { item: "mpx", weight: 1 },
@@ -647,7 +648,9 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "ak47", weight: 1 },
             { item: "model_37", weight: 0.95 },
             { item: "mp5k", weight: 0.85 },
+            { item: "mp5", weight: 0.9 },
             { item: "aug", weight: 0.7 },
+            { item: "famas", weight: 0.63 },
             { item: "sks", weight: 0.7 },
             { item: "m3k", weight: 0.3 },
             { item: "m16a2", weight: 0.1 },
@@ -671,7 +674,18 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "negev", weight: 0.003 },
             { item: "mg5", weight: 0.003 },
             { item: "tango_51", weight: 0.002 },
-            { item: "dual_deagle", weight: 0.001 }
+            { item: "dual_deagle", weight: 0.001 },
+            { item: "m4a1", weight: 0.05 },
+            { item: "tar21", weight: 0.04 },
+            { item: "g3", weight: 0.03 },
+            { item: "scar_h", weight: 0.03 },
+            { item: "mp7", weight: 0.05 },
+            { item: "vk9", weight: 0.04 },
+            { item: "ppsh41", weight: 0.04 },
+            { item: "svd", weight: 0.03 },
+            { item: "m1911", weight: 0.05 },
+            { item: "l86a1", weight: 0.02 },
+            { item: "m60", weight: 0.02 }
         ],
         healing_items: [
             { item: "gauze", count: 5, weight: 3 },
@@ -723,6 +737,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "ak47", weight: 1.1 },
             { item: "mp5k", weight: 1.07 },
             { item: "aug", weight: 1.05 },
+            { item: "famas", weight: 0.945 },
             { item: "hp18", weight: 1 },
             { item: "mpx", weight: 1 },
             { item: "sks", weight: 1 },
@@ -1252,6 +1267,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "model_37", weight: 0.95 },
             { item: "mp5k", weight: 0.85 },
             { item: "aug", weight: 0.7 },
+            { item: "famas", weight: 0.63 },
             { item: "sks", weight: 0.7 },
             { item: "m3k", weight: 0.3 },
             { item: "m16a2", weight: 0.1 },
@@ -1282,6 +1298,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             { item: "ak47", weight: 1.1 },
             { item: "mp5k", weight: 1.07 },
             { item: "aug", weight: 1.05 },
+            { item: "famas", weight: 0.945 },
             { item: "hp18", weight: 1 },
             { item: "blr", weight: 1 },
             { item: "mpx", weight: 1 },
@@ -2300,6 +2317,7 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
         green_gift: [
             [
                 { item: "aug", weight: 0.5 },
+            { item: "famas", weight: 0.45 },
                 { item: "blr", weight: 0.5 },
                 { item: "m16a2", weight: 0.5 },
                 { item: "cz600", weight: 0.35 },
@@ -2349,5 +2367,23 @@ export const LootTables: Record<ModeName, Record<string, LootTable>> = {
             ]
         ],
     },
-    // birthday: {}
-};
+    birthday: {}
+} as unknown as Record<ModeName, Record<string, LootTable>>;
+
+// 二创：新增模式复用 normal 掉落表，并注入新模式专属道具
+// 注意：放在 LootTables 定义之后追加赋值，避免复制整份 normal 表
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+LootTables.extraction = { ...LootTables.normal };
+LootTables.extraction.throwables = [
+    ...(LootTables.normal.throwables as readonly WeightedItem[]),
+    { item: "illumination_flare", count: 2, weight: 0.6 }
+];
+LootTables.extraction.healing_items = [
+    ...(LootTables.normal.healing_items as readonly WeightedItem[]),
+    { item: "adrenaline_syringe", weight: 0.9 }
+];
+LootTables.night = { ...LootTables.normal };
+LootTables.night.throwables = [
+    ...(LootTables.normal.throwables as readonly WeightedItem[]),
+    { item: "illumination_flare", count: 2, weight: 0.8 }
+];

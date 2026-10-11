@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="124" height="50" fill="none"><defs><clipPath id="cp_fal_uniq"><path fill="#fff" d="M0 0h124v50H0Z"/></clipPath></defs>
+<g transform="rotate(15 62 25)" clip-path="url(#cp_fal_uniq)">
+  <!-- 枪管 -->
+  <rect x="6" y="21.6" width="42" height="4.6" rx="1" fill="#4b4b4b"/>
+  <!-- 枪口制退器 -->
+  <rect x="4" y="20.4" width="8" height="7" rx="1.2" fill="#2e2e2e"/>
+  <rect x="6.5" y="22" width="3" height="4" fill="#161616"/>
+  <!-- 准星 -->
+  <rect x="20" y="18.2" width="2.4" height="3.8" fill="#5f5f5f"/>
+  <!-- 木质护木 -->
+  <rect x="42" y="17.2" width="34" height="13.8" rx="3" fill="#7a4f28"/>
+  <rect x="46" y="20.6" width="26" height="1.8" rx="0.9" fill="#5c3a1a"/>
+  <rect x="46" y="25.4" width="26" height="1.8" rx="0.9" fill="#5c3a1a"/>
+  <!-- 机匣 -->
+  <rect x="72" y="14.8" width="36" height="17.8" rx="2.5" fill="#333"/>
+  <!-- 拉机柄 -->
+  <rect x="100" y="11.8" width="6" height="3.4" rx="1" fill="#464646"/>
+  <!-- 照门 -->
+  <rect x="76" y="12.8" width="2.6" height="4" fill="#5f5f5f"/>
+  <!-- 大弯弹匣（FN FAL 标志性） -->
+  <path d="M84 31.6 q2 12 -2 17 q-5 5 -9 1 q-4 -4 -2 -12 q2 -7 8 -9 z" fill="#3a3a3a"/>
+  <path d="M83 35.6 q1.5 7 -1.5 10" stroke="#171717" stroke-width="1.4"/>
+  <!-- 木握把 -->
+  <path d="M98 31.8 l1.6 9 q0.8 4 -3.2 4 h-3 q-3.4 0 -1.8 -5 l2.2 -9 z" fill="#6e451f"/>
+  <!-- 木枪托 -->
+  <path d="M108 15.6 h10 v15 h-10 q-3 0 -2 -5 l1 -10 z" fill="#6e451f"/>
+  <!-- 扳机护圈 -->
+  <path d="M97 34.2 q5 5.4 9 0" stroke="#4a4a4a" stroke-width="1.7" fill="none"/>
+</g></svg>

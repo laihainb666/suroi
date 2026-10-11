@@ -5,7 +5,7 @@ import type { SingleGunNarrowing } from "@common/definitions/items/guns";
 import { PerkData, PerkIds } from "@common/definitions/items/perks";
 import { Loots, type LootDefinition } from "@common/definitions/loots";
 import { MapPings, type MapPing } from "@common/definitions/mapPings";
-import { ModeDefinition, ModeName, Modes } from "@common/definitions/modes";
+import { ExtractionZones, ModeDefinition, ModeName, Modes } from "@common/definitions/modes";
 import { Obstacles, type ObstacleDefinition } from "@common/definitions/obstacles";
 import { SyncedParticles, type SyncedParticleDefinition } from "@common/definitions/syncedParticles";
 import { type JoinData } from "@common/packets/joinPacket";
@@ -62,6 +62,8 @@ export class Game implements GameData {
 
     readonly modeName: ModeName;
     readonly mode: ModeDefinition;
+
+    readonly mapName: MapName;
 
     readonly partialDirtyObjects = new Set<BaseGameObject>();
     readonly fullDirtyObjects = new Set<BaseGameObject>();
@@ -184,6 +186,9 @@ export class Game implements GameData {
 
     private readonly _timeouts = new Set<Timeout>();
 
+    /** 二创：撤离模式（地铁逃生）玩家撤离进度（ms），key=Player */
+    private readonly _extractionProgress = new Map<Player, number>();
+
     addTimeout(callback: () => void, delay = 0): Timeout {
         const timeout = new Timeout(callback, this.now + delay);
         this._timeouts.add(timeout);
@@ -250,6 +255,8 @@ export class Game implements GameData {
 
         this.mode = Modes[this.modeName = modeFromMap(map)];
 
+        this.mapName = map.split(":")[0] as MapName;
+
         this.spawnWindow = mapOptions.gameSpawnWindow ?? GAME_SPAWN_WINDOW;
 
         void this.pluginManager.loadPlugins();
@@ -299,7 +306,10 @@ export class Game implements GameData {
                     player.spectate(packet);
                     break;
                 case PacketType.Debug:
-                    if (process.env.NODE_ENV === "development") {
+                    // 调试包门禁：默认对所有玩家开放（allowPublicDebugMenu）。
+                    // 原上游仅在 NODE_ENV=development 下放行，这里改为读配置，
+                    // 这样生产部署也能开调试菜单；把配置设为 false 即可完全关闭。
+                    if (Config.allowPublicDebugMenu !== false || process.env.NODE_ENV === "development") {
                         player.processDebugPacket(packet);
                     }
                     break;
@@ -544,6 +554,57 @@ export class Game implements GameData {
                 this._stopped = true;
                 this.log("Ended");
             }, 1000);
+        }
+
+        // 二创：撤离模式（地铁逃生）—— 进入撤离点停留 3 秒即全员撤离成功
+        if (
+            this._started
+            && !this.over
+            && this.modeName === "extraction"
+        ) {
+            // 撤离模式：按当前地图 idString 取撤离点（metro 四角+中部站台），支持多撤离图扩展
+            const zones = ExtractionZones[this.mapName] ?? ExtractionZones["metro"];
+            if (zones && zones.length) {
+                let extractor: Player | undefined;
+                for (const player of this.livingPlayers) {
+                    let inZone = false;
+                    for (const zone of zones) {
+                        if (Vec.len(Vec.sub(player.position, zone.position)) <= zone.radius) {
+                            inZone = true;
+                            break;
+                        }
+                    }
+                    if (inZone) {
+                        const progress = (this._extractionProgress.get(player) ?? 0) + this._dt;
+                        this._extractionProgress.set(player, progress);
+                        if (progress >= 3000) {
+                            extractor = player;
+                            break;
+                        }
+                    } else {
+                        this._extractionProgress.delete(player);
+                    }
+                }
+                if (extractor) {
+                    for (const player of this.livingPlayers) {
+                        const { movement } = player;
+                        movement.up = movement.down = movement.left = movement.right = false;
+                        player.attacking = false;
+                        player.sendEmote(player.loadout.emotes[6], true);
+                        player.sendGameOverPacket(true);
+                        this.pluginManager.emit("player_did_win", player);
+                    }
+                    this.pluginManager.emit("game_end", this);
+                    this.setGameData({ allowJoin: false, over: true });
+                    this.addTimeout(() => {
+                        for (const player of this.connectedPlayers) {
+                            player.disconnect("Game ended");
+                        }
+                        this._stopped = true;
+                        this.log("Ended");
+                    }, 1000);
+                }
+            }
         }
 
         // Record performance and start the next tick

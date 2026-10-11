@@ -620,6 +620,44 @@ export const Guns = new InventoryItemDefinitions<GunDefinition>(([
         }
     },
     {
+        idString: "mp5",
+        name: "MP5",
+        defType: DefinitionType.Gun,
+        tier: Tier.D,
+        ammoType: "9mm",
+        ammoSpawnAmount: 80,
+        speedMultiplier: 1.15,
+        capacity: 30,
+        extendedCapacity: 45,
+        reloadTime: 2.1,
+        fireDelay: 58,
+        switchDelay: 250,
+        recoilMultiplier: 0.85,
+        recoilDuration: 280,
+        fireMode: FireMode.Auto,
+        shotSpread: 4,
+        moveSpread: 9,
+        length: 5.8,
+        fists: {
+            left: Vec(85, -2),
+            right: Vec(40, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(71, 0) },
+        inventoryScale: 0.85,
+        casingParticles: [{
+            position: Vec(4, 0.35)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 14,
+            obstacleMultiplier: 1.025,
+            speed: 0.26,
+            range: 105
+        }
+    },
+    {
         idString: "psm",
         name: "PSM",
         defType: DefinitionType.Gun,
@@ -1178,6 +1216,43 @@ export const Guns = new InventoryItemDefinitions<GunDefinition>(([
         reloadTime: 2.25,
         ballistics: {
             damage: 10.5,
+            obstacleMultiplier: 1.5,
+            speed: 0.28,
+            range: 160
+        }
+    },
+    {
+        idString: "famas",
+        name: "FAMAS",
+        defType: DefinitionType.Gun,
+        tier: Tier.C,
+        ammoType: "556mm",
+        ammoSpawnAmount: 90,
+        capacity: 25,
+        extendedCapacity: 35,
+        reloadTime: 2.1,
+        fireDelay: 65,
+        switchDelay: 400,
+        speedMultiplier: 1,
+        recoilMultiplier: 0.7,
+        recoilDuration: 120,
+        fireMode: FireMode.Auto,
+        shotSpread: 3.5,
+        moveSpread: 10,
+        length: 6.9,
+        fists: {
+            left: Vec(96, -2),
+            right: Vec(38, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(75, -0.5) },
+        casingParticles: [{
+            position: Vec(2.5, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 10,
             obstacleMultiplier: 1.5,
             speed: 0.28,
             range: 160
@@ -3578,6 +3653,450 @@ export const Guns = new InventoryItemDefinitions<GunDefinition>(([
                     }
                 ]
             }
+        }
+    },
+    {
+        idString: "m4a1",
+        name: "M4A1",
+        defType: DefinitionType.Gun,
+        tier: Tier.B,
+        ammoType: "556mm",
+        ammoSpawnAmount: 80,
+        capacity: 30,
+        extendedCapacity: 45,
+        reloadTime: 2.1,
+        fireDelay: 65,
+        switchDelay: 300,
+        speedMultiplier: 1,
+        recoilMultiplier: 0.7,
+        recoilDuration: 130,
+        fireMode: FireMode.Auto,
+        shotSpread: 3,
+        moveSpread: 8,
+        length: 7.2,
+        fists: {
+            left: Vec(110, -3),
+            right: Vec(40, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(92, 1.5) },
+        casingParticles: [{
+            position: Vec(4, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 18,
+            obstacleMultiplier: 1.5,
+            speed: 0.29,
+            range: 170
+        }
+    },
+    {
+        idString: "tar21",
+        name: "TAR-21",
+        defType: DefinitionType.Gun,
+        tier: Tier.C,
+        ammoType: "556mm",
+        ammoSpawnAmount: 80,
+        capacity: 25,
+        extendedCapacity: 40,
+        reloadTime: 2.0,
+        fireDelay: 72,
+        switchDelay: 320,
+        speedMultiplier: 1.02,
+        recoilMultiplier: 0.65,
+        recoilDuration: 120,
+        fireMode: FireMode.Auto,
+        shotSpread: 5,
+        moveSpread: 10,
+        length: 7.0,
+        fists: {
+            left: Vec(105, -2),
+            right: Vec(40, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(90, 1) },
+        casingParticles: [{
+            position: Vec(4, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 16,
+            obstacleMultiplier: 1.5,
+            speed: 0.28,
+            range: 160
+        }
+    },
+    {
+        idString: "g3",
+        name: "G3",
+        defType: DefinitionType.Gun,
+        tier: Tier.B,
+        ammoType: "762mm",
+        ammoSpawnAmount: 60,
+        capacity: 20,
+        extendedCapacity: 30,
+        reloadTime: 2.6,
+        fireDelay: 78,
+        switchDelay: 380,
+        speedMultiplier: 0.98,
+        recoilMultiplier: 0.8,
+        recoilDuration: 140,
+        fireMode: FireMode.Auto,
+        shotSpread: 3,
+        moveSpread: 6,
+        length: 8.2,
+        fists: {
+            left: Vec(112, -4),
+            right: Vec(44, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(92, 1.5) },
+        casingParticles: [{
+            frame: "casing_762x39mm",
+            position: Vec(4, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 20,
+            obstacleMultiplier: 1.5,
+            speed: 0.29,
+            range: 180
+        }
+    },
+    {
+        idString: "scar_h",
+        name: "SCAR-H",
+        defType: DefinitionType.Gun,
+        tier: Tier.C,
+        ammoType: "762mm",
+        ammoSpawnAmount: 70,
+        capacity: 20,
+        extendedCapacity: 30,
+        reloadTime: 2.4,
+        fireDelay: 85,
+        switchDelay: 340,
+        speedMultiplier: 1.0,
+        recoilMultiplier: 0.72,
+        recoilDuration: 140,
+        fireMode: FireMode.Auto,
+        shotSpread: 2.4,
+        moveSpread: 5.5,
+        length: 8.6,
+        fists: {
+            left: Vec(114, -4),
+            right: Vec(44, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(94, 1.5) },
+        casingParticles: [{
+            frame: "casing_762x39mm",
+            position: Vec(4, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 22,
+            obstacleMultiplier: 1.5,
+            speed: 0.3,
+            range: 190
+        }
+    },
+    {
+        idString: "mp7",
+        name: "MP7",
+        defType: DefinitionType.Gun,
+        tier: Tier.C,
+        ammoType: "9mm",
+        ammoSpawnAmount: 80,
+        capacity: 30,
+        extendedCapacity: 45,
+        reloadTime: 1.9,
+        fireDelay: 55,
+        switchDelay: 260,
+        speedMultiplier: 1.08,
+        recoilMultiplier: 0.6,
+        recoilDuration: 220,
+        fireMode: FireMode.Auto,
+        shotSpread: 3.6,
+        moveSpread: 8,
+        length: 6.1,
+        fists: {
+            left: Vec(86, -2),
+            right: Vec(40, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(72, 0) },
+        inventoryScale: 0.9,
+        casingParticles: [{
+            position: Vec(4, 0.35)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 15,
+            obstacleMultiplier: 1.05,
+            speed: 0.27,
+            range: 112
+        }
+    },
+    {
+        idString: "vk9",
+        name: "Vector-9",
+        defType: DefinitionType.Gun,
+        tier: Tier.B,
+        ammoType: "9mm",
+        ammoSpawnAmount: 80,
+        capacity: 25,
+        extendedCapacity: 40,
+        reloadTime: 2.0,
+        fireDelay: 46,
+        switchDelay: 250,
+        speedMultiplier: 1.12,
+        recoilMultiplier: 0.45,
+        recoilDuration: 200,
+        fireMode: FireMode.Auto,
+        shotSpread: 3,
+        moveSpread: 7,
+        length: 6.4,
+        fists: {
+            left: Vec(88, -2),
+            right: Vec(40, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(74, 0) },
+        casingParticles: [{
+            position: Vec(4, 0.35)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 15,
+            obstacleMultiplier: 1.05,
+            speed: 0.27,
+            range: 118
+        }
+    },
+    {
+        idString: "ppsh41",
+        name: "PPSh-41",
+        defType: DefinitionType.Gun,
+        tier: Tier.C,
+        ammoType: "9mm",
+        ammoSpawnAmount: 90,
+        capacity: 71,
+        extendedCapacity: 85,
+        reloadTime: 2.6,
+        fullReloadTime: 3.4,
+        shotsPerReload: 1,
+        reloadFullOnEmpty: true,
+        fireDelay: 48,
+        switchDelay: 280,
+        speedMultiplier: 1.06,
+        recoilMultiplier: 0.55,
+        recoilDuration: 160,
+        fireMode: FireMode.Auto,
+        shotSpread: 4.2,
+        moveSpread: 11,
+        length: 6.8,
+        fists: {
+            left: Vec(92, -2),
+            right: Vec(38, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(88, 2) },
+        casingParticles: [{ position: Vec(4, 0.4) }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 12,
+            obstacleMultiplier: 1.1,
+            speed: 0.26,
+            range: 105
+        }
+    },
+    {
+        idString: "svd",
+        name: "SVD",
+        defType: DefinitionType.Gun,
+        tier: Tier.B,
+        ammoType: "762mm",
+        ammoSpawnAmount: 30,
+        spawnScope: "4x_scope",
+        capacity: 10,
+        extendedCapacity: 15,
+        reloadTime: 2.4,
+        fireDelay: 160,
+        switchDelay: 380,
+        speedMultiplier: 0.96,
+        recoilMultiplier: 0.5,
+        recoilDuration: 420,
+        fireMode: FireMode.Single,
+        shotSpread: 0.9,
+        moveSpread: 2.2,
+        length: 8.6,
+        shootOnRelease: true,
+        fists: {
+            left: Vec(104, -1),
+            right: Vec(40, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(90, 2.6) },
+        casingParticles: [{ frame: "casing_762x54mmR", position: Vec(4, 0.4) }],
+        gasParticles: gasParticlePresets.rifle,
+        ballistics: {
+            damage: 34,
+            obstacleMultiplier: 1.6,
+            speed: 0.34,
+            range: 230
+        }
+    },
+    {
+        idString: "m1911",
+        name: "M1911",
+        defType: DefinitionType.Gun,
+        tier: Tier.D,
+        ammoType: "9mm",
+        ammoSpawnAmount: 28,
+        capacity: 7,
+        extendedCapacity: 12,
+        reloadTime: 1.6,
+        fireDelay: 175,
+        switchDelay: 240,
+        speedMultiplier: 1.14,
+        recoilMultiplier: 0.42,
+        recoilDuration: 260,
+        fireMode: FireMode.Single,
+        shotSpread: 1.8,
+        moveSpread: 4.5,
+        length: 4.8,
+        fists: {
+            left: Vec(58, -1),
+            right: Vec(26, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(46, 1.5) },
+        casingParticles: [{ position: Vec(2.5, 0.35) }],
+        gasParticles: gasParticlePresets.pistol,
+        ballistics: {
+            damage: 26,
+            obstacleMultiplier: 1.3,
+            speed: 0.3,
+            range: 95
+        }
+    },
+    {
+        idString: "l86a1",
+        name: "L86A1",
+        defType: DefinitionType.Gun,
+        tier: Tier.B,
+        ammoType: "556mm",
+        ammoSpawnAmount: 90,
+        capacity: 30,
+        extendedCapacity: 50,
+        reloadTime: 2.6,
+        fireDelay: 58,
+        switchDelay: 380,
+        speedMultiplier: 0.96,
+        recoilMultiplier: 0.72,
+        recoilDuration: 150,
+        fireMode: FireMode.Auto,
+        shotSpread: 4.6,
+        moveSpread: 12,
+        length: 8.1,
+        fists: {
+            left: Vec(110, -3),
+            right: Vec(40, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(92, 2) },
+        casingParticles: [{ position: Vec(4, 0.4) }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 17,
+            obstacleMultiplier: 1.5,
+            speed: 0.29,
+            range: 175
+        }
+    },
+    {
+        idString: "p90",
+        name: "P90",
+        defType: DefinitionType.Gun,
+        tier: Tier.C,
+        ammoType: "9mm",
+        ammoSpawnAmount: 90,
+        capacity: 50,
+        extendedCapacity: 65,
+        reloadTime: 2.0,
+        fireDelay: 48,
+        switchDelay: 250,
+        speedMultiplier: 1.05,
+        recoilMultiplier: 0.55,
+        recoilDuration: 110,
+        fireMode: FireMode.Auto,
+        shotSpread: 4,
+        moveSpread: 12,
+        length: 6.4,
+        fists: {
+            left: Vec(96, -2),
+            right: Vec(38, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(88, 1) },
+        casingParticles: [{
+            position: Vec(4, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 11,
+            obstacleMultiplier: 1.4,
+            speed: 0.27,
+            range: 140
+        }
+    },
+    {
+        idString: "m249",
+        name: "M249",
+        defType: DefinitionType.Gun,
+        tier: Tier.B,
+        ammoType: "556mm",
+        ammoSpawnAmount: 120,
+        capacity: 100,
+        extendedCapacity: 150,
+        reloadTime: 3.4,
+        fireDelay: 56,
+        switchDelay: 420,
+        speedMultiplier: 0.92,
+        recoilMultiplier: 0.7,
+        recoilDuration: 150,
+        fireMode: FireMode.Auto,
+        shotSpread: 5,
+        moveSpread: 12,
+        length: 9.6,
+        fists: {
+            left: Vec(124, -5),
+            right: Vec(48, 0),
+            rightZIndex: 4,
+            animationDuration: 100
+        },
+        image: { position: Vec(100, 1.5) },
+        casingParticles: [{
+            position: Vec(4, 0.4)
+        }],
+        gasParticles: gasParticlePresets.automatic,
+        ballistics: {
+            damage: 13,
+            obstacleMultiplier: 1.5,
+            speed: 0.29,
+            range: 170
         }
     }
 ] satisfies readonly RawGunDefinition[]).flatMap((def: RawGunDefinition) => {
